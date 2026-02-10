@@ -62,13 +62,13 @@ export default function Page() {
             </motion.div>
           ) : (
             <motion.div key="conversation" className="flex flex-1 overflow-hidden" {...motionProps}>
-              {/* Left panel: Claim workspace — 58% */}
-              <div className="flex w-[58%] flex-col">
+              {/* Left panel: Claim workspace */}
+              <div className="flex flex-[58] flex-col">
                 <ClaimWorkspace />
               </div>
 
-              {/* Right panel: Conversation — 42% */}
-              <div className="flex w-[42%] flex-col border-l border-border/40">
+              {/* Right panel: Conversation */}
+              <div className="flex flex-[42] flex-col border-l border-border/40">
                 <ChatPanel />
               </div>
             </motion.div>

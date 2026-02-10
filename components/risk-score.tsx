@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatUSD } from "@/lib/fee-schedule";
 
 interface RiskScoreProps {
   score: number;
@@ -72,7 +73,7 @@ export function RiskScore({ score, size = "md", revenueAtRisk }: RiskScoreProps)
         {revenueAtRisk != null ? (
           <>
             <span className={`text-sm font-semibold ${revenueAtRisk > 0 ? colors.label : "text-success"}`}>
-              ${Math.round(revenueAtRisk).toLocaleString("en-US")} at risk
+              {formatUSD(revenueAtRisk)} at risk
             </span>
             <span className="text-[11px] text-muted-foreground">
               Score: {score}/100

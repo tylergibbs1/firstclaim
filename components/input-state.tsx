@@ -251,7 +251,7 @@ export function InputState() {
               <button
                 key={sample.title}
                 onClick={() => setNotes(sample.notes)}
-                className="flex flex-col items-start gap-1.5 rounded-xl border border-border/50 bg-card px-3.5 py-3 text-left shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/5 hover:shadow-md"
+                className="flex flex-col items-start gap-1.5 rounded-xl border border-border/50 bg-card px-3.5 py-3 text-left shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               >
                 <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${sample.badgeClass}`}>
                   {sample.badge}

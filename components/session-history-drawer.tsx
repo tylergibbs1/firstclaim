@@ -160,6 +160,7 @@ export function SessionHistoryDrawer({
         <div className="relative px-3 py-2 border-b border-border/60">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
+            aria-label="Search sessions"
             placeholder="Search sessions…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -213,9 +214,10 @@ export function SessionHistoryDrawer({
                       </span>
                       <button
                         onClick={(e) => handleDelete(e, s.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                        aria-label="Delete session"
+                        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity p-0.5 rounded hover:bg-destructive/10 focus-visible:bg-destructive/10 text-muted-foreground hover:text-destructive focus-visible:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3 w-3" aria-hidden="true" />
                       </button>
                     </div>
                   </div>

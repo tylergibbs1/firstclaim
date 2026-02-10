@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, memo } from "react";
+import { useState, useRef, useEffect, memo, useMemo } from "react";
 import { useStore, useDispatch } from "@/lib/store";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -195,9 +195,10 @@ export function ChatPanel() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const fixInFlightRef = useRef(false);
 
-  const lastPrompts = [...messages]
-    .reverse()
-    .find((m) => m.suggestedPrompts?.length)?.suggestedPrompts;
+  const lastPrompts = useMemo(
+    () => [...messages].reverse().find((m) => m.suggestedPrompts?.length)?.suggestedPrompts,
+    [messages]
+  );
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -471,7 +472,7 @@ export function ChatPanel() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder="Ask about the claim, request changes…"
-            className="flex-1 bg-transparent py-2 text-[13px] placeholder:text-muted-foreground/50 focus:outline-none focus-visible:outline-none"
+            className="flex-1 bg-transparent py-2 text-[13px] placeholder:text-muted-foreground/50 outline-none"
             disabled={isSending}
           />
           <button

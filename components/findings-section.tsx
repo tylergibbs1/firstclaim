@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useStore, useDispatch } from "@/lib/store";
 import {
   ChevronDown,
@@ -12,7 +12,7 @@ import {
   ExternalLink,
   Wrench,
 } from "lucide-react";
-import { motion, AnimatePresence, LayoutGroup } from "motion/react";
+import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from "motion/react";
 import type { Finding, FindingSeverity } from "@/lib/types";
 import {
   revenueAtRisk,
@@ -157,21 +157,25 @@ function FindingCard({ finding, dollarImpact }: { finding: Finding; dollarImpact
 
 export function FindingsSection() {
   const { claim } = useStore();
+  const reducedMotion = useReducedMotion();
+
+  const { sorted, resolvedFindings, activeFindings, atRisk } = useMemo(() => {
+    if (!claim) return { sorted: [], resolvedFindings: [], activeFindings: [], atRisk: 0 };
+    const active: Finding[] = [];
+    const resolved: Finding[] = [];
+    for (const f of claim.findings) {
+      (f.resolved ? resolved : active).push(f);
+    }
+    const order: FindingSeverity[] = ["critical", "warning", "info"];
+    const s = [...active].sort((a, b) => order.indexOf(a.severity) - order.indexOf(b.severity));
+    return { sorted: s, resolvedFindings: resolved, activeFindings: active, atRisk: revenueAtRisk(claim) };
+  }, [claim]);
 
   if (!claim) return null;
 
-  const activeFindings: Finding[] = [];
-  const resolvedFindings: Finding[] = [];
-  for (const f of claim.findings) {
-    (f.resolved ? resolvedFindings : activeFindings).push(f);
-  }
-
-  const order: FindingSeverity[] = ["critical", "warning", "info"];
-  const sorted = [...activeFindings].sort(
-    (a, b) => order.indexOf(a.severity) - order.indexOf(b.severity)
-  );
-
-  const atRisk = revenueAtRisk(claim);
+  const motionTransition = reducedMotion
+    ? { duration: 0 }
+    : { type: "spring" as const, stiffness: 350, damping: 30, mass: 1 };
 
   return (
     <div className="mx-4 mt-5 mb-4">
@@ -197,16 +201,16 @@ export function FindingsSection() {
       )}
 
       <LayoutGroup>
-        <motion.div layout transition={{ type: "spring", stiffness: 350, damping: 30, mass: 1 }} className="space-y-2">
+        <motion.div layout={!reducedMotion} transition={motionTransition} className="space-y-2">
           <AnimatePresence mode="popLayout" initial={false}>
             {sorted.map((f) => (
               <motion.div
                 key={f.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
-                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
-                transition={{ type: "spring", stiffness: 350, damping: 30, mass: 1 }}
+                layout={!reducedMotion}
+                initial={reducedMotion ? false : { opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
+                transition={motionTransition}
               >
                 <FindingCard finding={f} dollarImpact={findingRevenueImpact(f, claim.lineItems)} />
               </motion.div>
@@ -218,9 +222,9 @@ export function FindingsSection() {
       <AnimatePresence initial={false}>
         {resolvedFindings.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
+            initial={reducedMotion ? false : { opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            transition={{ type: "spring", stiffness: 350, damping: 30, mass: 1 }}
+            transition={motionTransition}
             className="mt-3 space-y-1.5"
           >
             <h4 className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
@@ -230,9 +234,9 @@ export function FindingsSection() {
               {resolvedFindings.map((f) => (
                 <motion.div
                   key={f.id}
-                  initial={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
-                  animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                  transition={{ type: "spring", stiffness: 350, damping: 30, mass: 1 }}
+                  initial={reducedMotion ? false : { opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={motionTransition}
                 >
                   <FindingCard finding={f} />
                 </motion.div>

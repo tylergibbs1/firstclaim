@@ -1,7 +1,7 @@
 import { runChat } from "@/lib/agent/run-chat";
 import { getUserId } from "@/lib/auth";
 
-export const maxDuration = 120;
+export const maxDuration = 600;
 
 export async function POST(req: Request) {
   const userId = await getUserId(req);

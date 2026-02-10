@@ -1,7 +1,7 @@
 import { runAnalysis } from "@/lib/agent/run-analysis";
 import { getUserId } from "@/lib/auth";
 
-export const maxDuration = 120;
+export const maxDuration = 600;
 
 export async function POST(req: Request) {
   const userId = await getUserId(req);

@@ -208,6 +208,8 @@ export function NotesView() {
             return (
               <button
                 key={i}
+                aria-label={`View details for ${seg.highlight.type === "cpt" ? "CPT" : "ICD-10"} code ${seg.highlight.code}`}
+                aria-pressed={isActive}
                 onClick={() =>
                   dispatch({
                     type: "SET_SELECTED_HIGHLIGHT",

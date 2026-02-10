@@ -18,16 +18,13 @@ export function ClaimWorkspace() {
         <ClaimHeader />
       </div>
       <div className="relative flex-1 min-h-0">
-        {leftPanelView === "claim" ? (
-          <div className="absolute inset-0 overflow-y-auto">
-            <ClaimTable />
-            <FindingsSection />
-          </div>
-        ) : (
-          <div className="absolute inset-0 overflow-y-auto">
-            <NotesView />
-          </div>
-        )}
+        <div className={`absolute inset-0 overflow-y-auto ${leftPanelView !== "claim" ? "hidden" : ""}`}>
+          <ClaimTable />
+          <FindingsSection />
+        </div>
+        <div className={`absolute inset-0 overflow-y-auto ${leftPanelView !== "notes" ? "hidden" : ""}`}>
+          <NotesView />
+        </div>
       </div>
       <ActionBar />
     </div>

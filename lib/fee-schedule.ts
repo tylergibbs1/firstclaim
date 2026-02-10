@@ -55,7 +55,13 @@ export function findingRevenueImpact(
   return item ? lineItemFee(item) : 0;
 }
 
+const usdFormat = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
 /** Format a number as whole-dollar USD, e.g. "$267". */
 export function formatUSD(amount: number): string {
-  return `$${Math.round(amount).toLocaleString("en-US")}`;
+  return usdFormat.format(amount);
 }

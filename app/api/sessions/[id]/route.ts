@@ -12,28 +12,29 @@ export async function GET(
 
   const { id } = await params;
 
-  const { data: session, error } = await supabase
-    .from("sessions")
-    .select("*")
-    .eq("id", id)
-    .eq("user_id", userId)
-    .single();
+  const [sessionResult, messagesResult] = await Promise.all([
+    supabase
+      .from("sessions")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .single(),
+    supabase
+      .from("messages")
+      .select("*")
+      .eq("session_id", id)
+      .order("created_at", { ascending: true }),
+  ]);
 
-  if (error || !session) {
+  if (sessionResult.error || !sessionResult.data) {
     return Response.json({ error: "Session not found" }, { status: 404 });
   }
 
-  const { data: messages, error: msgError } = await supabase
-    .from("messages")
-    .select("*")
-    .eq("session_id", id)
-    .order("created_at", { ascending: true });
-
-  if (msgError) {
-    return Response.json({ error: msgError.message }, { status: 500 });
+  if (messagesResult.error) {
+    return Response.json({ error: messagesResult.error.message }, { status: 500 });
   }
 
-  return Response.json({ session, messages });
+  return Response.json({ session: sessionResult.data, messages: messagesResult.data });
 }
 
 export async function DELETE(

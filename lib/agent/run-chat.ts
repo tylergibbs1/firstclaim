@@ -29,21 +29,16 @@ async function* streamPrompt(content: string): AsyncIterable<SDKUserMessage> {
 }
 
 export async function runChat({ sessionId, message, userId, onEvent }: RunChatOptions) {
-  // Load session
+  // Load session (user_id filter doubles as ownership check)
   const { data: session, error: loadErr } = await supabase
     .from("sessions")
     .select("*")
     .eq("id", sessionId)
+    .eq("user_id", userId)
     .single();
 
   if (loadErr || !session) {
-    onEvent({ type: "error", message: `Session not found: ${loadErr?.message}` });
-    return;
-  }
-
-  // Verify session belongs to this user
-  if (session.user_id !== userId) {
-    onEvent({ type: "error", message: "Unauthorized" });
+    onEvent({ type: "error", message: "Session not found or unauthorized" });
     return;
   }
 
@@ -207,35 +202,36 @@ export async function runChat({ sessionId, message, userId, onEvent }: RunChatOp
     return;
   }
 
-  // Persist updated claim
   const finalClaim = claimState.claim;
-  await supabase
-    .from("sessions")
-    .update({
-      claim: finalClaim,
-      agent_session_id: agentSessionId,
-      status: "completed",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", sessionId);
-
   const suggestedPrompts = claimState.suggestedPrompts.length >= 2
     ? claimState.suggestedPrompts
     : extractSuggestedPrompts(accumulatedText);
 
-  // Persist the agent response
-  await supabase.from("messages").insert({
-    session_id: sessionId,
-    role: "agent",
-    content: accumulatedText,
-    suggested_prompts: suggestedPrompts,
-  });
-
+  // Emit completion immediately so the UI transitions without waiting for DB
   onEvent({
     type: "chat_complete",
     summary: accumulatedText,
     suggestedPrompts,
   });
+
+  // Persist to Supabase in background (don't block the response)
+  Promise.all([
+    supabase
+      .from("sessions")
+      .update({
+        claim: finalClaim,
+        agent_session_id: agentSessionId,
+        status: "completed",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", sessionId),
+    supabase.from("messages").insert({
+      session_id: sessionId,
+      role: "agent",
+      content: accumulatedText,
+      suggested_prompts: suggestedPrompts,
+    }),
+  ]).catch((err) => console.error("Failed to persist chat results:", err));
 }
 
 function extractSuggestedPrompts(text: string): string[] {
