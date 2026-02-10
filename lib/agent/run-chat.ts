@@ -63,6 +63,7 @@ export async function runChat({ sessionId, message, userId, onEvent }: RunChatOp
   const claimState: ClaimState = {
     claim: currentClaim,
     highlights: [],
+    suggestedPrompts: [],
     onClaimUpdate: (claim: ClaimData) => {
       claimState.claim = claim;
       onEvent({ type: "claim_updated", claim });
@@ -101,7 +102,7 @@ export async function runChat({ sessionId, message, userId, onEvent }: RunChatOp
         mcpServers: { billing: mcpServer },
         allowedTools: ["mcp__billing__*", "WebSearch"],
         includePartialMessages: true,
-        maxTurns: 10,
+        maxTurns: 100,
         permissionMode: "bypassPermissions",
         allowDangerouslySkipPermissions: true,
         ...(agentSessionId ? { resume: agentSessionId } : {}),
@@ -218,7 +219,9 @@ export async function runChat({ sessionId, message, userId, onEvent }: RunChatOp
     })
     .eq("id", sessionId);
 
-  const suggestedPrompts = extractSuggestedPrompts(accumulatedText);
+  const suggestedPrompts = claimState.suggestedPrompts.length >= 2
+    ? claimState.suggestedPrompts
+    : extractSuggestedPrompts(accumulatedText);
 
   // Persist the agent response
   await supabase.from("messages").insert({
@@ -236,13 +239,13 @@ export async function runChat({ sessionId, message, userId, onEvent }: RunChatOp
 }
 
 function extractSuggestedPrompts(text: string): string[] {
-  const defaults = ["What else should I check?", "Export the claim"];
+  const defaults = ["Check for other issues", "Export the claim"];
   const lines = text.split("\n").filter(Boolean);
   const prompts: string[] = [];
   for (let i = lines.length - 1; i >= Math.max(0, lines.length - 6); i--) {
     const line = lines[i].trim();
     const match = line.match(/^[-•*]\s*[""]?(.+?)[""]?\s*$/);
-    if (match && match[1].endsWith("?")) {
+    if (match && match[1].length > 3 && match[1].length < 80) {
       prompts.unshift(match[1]);
     }
   }

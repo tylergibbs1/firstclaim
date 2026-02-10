@@ -6,37 +6,81 @@ import { useAuth } from "@/components/auth-provider";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import type { AnalysisStage } from "@/lib/types";
-import type { DemoScenario } from "@/lib/types";
-import { DEMO_NOTES } from "@/lib/mock-data";
-import { ArrowRight, FileText } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
-const EXAMPLES: {
-  scenario: DemoScenario;
-  title: string;
-  subtitle: string;
-  badge: string;
-  badgeClass: string;
-}[] = [
+const SAMPLE_NOTES: { title: string; subtitle: string; badge: string; badgeClass: string; notes: string }[] = [
   {
-    scenario: "a",
     title: "Routine Office Visit",
-    subtitle: "65M — back pain, radiculopathy",
+    subtitle: "Back pain, radiculopathy",
     badge: "Low Risk",
     badgeClass: "bg-success/10 text-success",
+    notes: `SUBJECTIVE:
+Patient is a 65-year-old male presenting with worsening lower back pain radiating to the left leg for 3 weeks. Pain rated 7/10. History of type 2 diabetes and hypertension. Currently on metformin and lisinopril.
+
+OBJECTIVE:
+BP 138/82. BMI 31.2. Lumbar spine tender to palpation L4-L5. Positive straight leg raise on left at 45 degrees. Decreased sensation left L5 dermatome. Reflexes 2+ bilateral.
+
+ASSESSMENT:
+1. Lumbar radiculopathy, left L5
+2. Type 2 diabetes mellitus, controlled
+3. Essential hypertension
+
+PLAN:
+1. Lumbar spine X-ray, 2 views
+2. Refer to physical therapy
+3. Prescribe gabapentin 300mg TID
+4. Follow up in 4 weeks
+5. Continue current medications`,
   },
   {
-    scenario: "b",
     title: "Dermatology Multi-Procedure",
-    subtitle: "45F — skin lesions, 4 procedures",
+    subtitle: "Skin lesions, 4 procedures",
     badge: "2 Findings",
     badgeClass: "bg-primary/10 text-primary",
+    notes: `SUBJECTIVE:
+Patient is a 45-year-old female presenting for evaluation of multiple skin lesions. She noticed a changing mole on her upper back and several skin tags on her neck that have been catching on clothing. No pain but the mole has increased in size over the past 2 months. No personal or family history of melanoma.
+
+OBJECTIVE:
+Skin exam reveals:
+- 8mm irregularly pigmented lesion on upper back, asymmetric borders
+- 4 additional suspicious pigmented lesions on trunk requiring biopsy
+- Multiple skin tags (6) on bilateral neck
+
+ASSESSMENT:
+1. Suspicious pigmented lesion, upper back - rule out melanoma
+2. Multiple suspicious pigmented lesions, trunk
+3. Multiple skin tags, neck
+
+PLAN:
+1. Shave biopsy of upper back lesion
+2. Tangential biopsy of 4 additional trunk lesions
+3. Skin tag removal x6, neck
+4. Pathology consultation
+5. Follow up for results in 1 week`,
   },
   {
-    scenario: "c",
     title: "Knee Injury + Red Flag",
-    subtitle: "30M — meniscus tear, critical issue",
+    subtitle: "Meniscus tear, critical issue",
     badge: "Critical",
     badgeClass: "bg-destructive/10 text-destructive",
+    notes: `SUBJECTIVE:
+Patient is a 30-year-old male presenting with right knee pain following a basketball injury 3 days ago. Pain 6/10, worse with weight bearing. Mild swelling noted. No locking or giving way. No prior knee injuries.
+
+OBJECTIVE:
+Right knee: moderate effusion, positive McMurray test medial, stable to varus/valgus stress. ROM 0-120 degrees (limited by pain). No erythema or warmth.
+Screening mammography ordered per protocol.
+
+ASSESSMENT:
+1. Internal derangement, right knee - possible medial meniscus tear
+2. Right knee effusion
+3. Screening mammography (per health maintenance protocol)
+
+PLAN:
+1. Right knee X-ray, 3 views
+2. Knee joint injection - triamcinolone 40mg + lidocaine
+3. Knee brace, activity modification
+4. MRI if not improved in 2 weeks
+5. Screening mammography scheduled`,
   },
 ];
 
@@ -64,7 +108,6 @@ export function InputState() {
         },
         body: JSON.stringify({
           clinicalNotes: notes,
-          patient: { sex: "M", age: 65 }, // TODO: extract from notes or add patient input
         }),
       });
 
@@ -160,15 +203,11 @@ export function InputState() {
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-16">
       <div className="w-full max-w-2xl">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-            <FileText className="h-6 w-6 text-primary" aria-hidden="true" />
-          </div>
-          <h1 className="mb-2 text-2xl font-semibold tracking-tight text-pretty">
+          <h1 className="mb-2 text-3xl font-semibold tracking-tight text-pretty">
             Get it right the first time.
           </h1>
           <p className="text-sm text-muted-foreground text-balance">
-            Paste your clinical notes below. The agent will extract codes,
-            build a structured claim, and validate it against CMS&nbsp;rules.
+            Paste your notes. Get back a validated, submission-ready&nbsp;claim.
           </p>
         </div>
 
@@ -208,20 +247,20 @@ export function InputState() {
             Try an example
           </p>
           <div className="grid grid-cols-3 gap-3">
-            {EXAMPLES.map((ex) => (
+            {SAMPLE_NOTES.map((sample) => (
               <button
-                key={ex.scenario}
-                onClick={() => setNotes(DEMO_NOTES[ex.scenario])}
+                key={sample.title}
+                onClick={() => setNotes(sample.notes)}
                 className="flex flex-col items-start gap-1.5 rounded-xl border border-border/50 bg-card px-3.5 py-3 text-left shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/5 hover:shadow-md"
               >
-                <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${ex.badgeClass}`}>
-                  {ex.badge}
+                <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${sample.badgeClass}`}>
+                  {sample.badge}
                 </span>
                 <span className="text-[13px] font-medium text-foreground">
-                  {ex.title}
+                  {sample.title}
                 </span>
                 <span className="text-[11px] text-muted-foreground">
-                  {ex.subtitle}
+                  {sample.subtitle}
                 </span>
               </button>
             ))}

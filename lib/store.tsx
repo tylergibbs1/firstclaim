@@ -12,7 +12,6 @@ import type {
   AnalysisStage,
   ClaimData,
   ChatMessage,
-  DemoScenario,
   LeftPanelView,
   NoteHighlight,
 } from "./types";
@@ -23,12 +22,13 @@ interface StoreState {
   analysisToolActivity: { tool: string; query: string; result?: string } | null;
   clinicalNotes: string;
   claim: ClaimData | null;
+  previousClaim: ClaimData | null;
   messages: ChatMessage[];
-  demoScenario: DemoScenario | null;
   leftPanelView: LeftPanelView;
   selectedHighlight: NoteHighlight | null;
   noteHighlights: NoteHighlight[];
   sessionId: string | null;
+  pendingFixMessage: string | null;
 }
 
 type Action =
@@ -40,7 +40,6 @@ type Action =
   | { type: "ADD_MESSAGE"; message: ChatMessage }
   | { type: "UPDATE_MESSAGE"; id: string; updates: Partial<ChatMessage> }
   | { type: "REMOVE_MESSAGE"; id: string }
-  | { type: "SET_DEMO_SCENARIO"; scenario: DemoScenario }
   | { type: "SET_LEFT_PANEL_VIEW"; view: LeftPanelView }
   | { type: "SET_SELECTED_HIGHLIGHT"; highlight: NoteHighlight | null }
   | { type: "SET_SESSION_ID"; sessionId: string }
@@ -56,6 +55,10 @@ type Action =
       highlights: NoteHighlight[];
       messages: ChatMessage[];
     }
+  | { type: "SET_PENDING_FIX_MESSAGE"; message: string }
+  | { type: "CLEAR_PENDING_FIX_MESSAGE" }
+  | { type: "CLEAR_PREVIOUS_CLAIM" }
+  | { type: "COMPLETE_ALL_TOOL_ACTIVITY" }
   | { type: "RESET" };
 
 const initialState: StoreState = {
@@ -64,12 +67,13 @@ const initialState: StoreState = {
   analysisToolActivity: null,
   clinicalNotes: "",
   claim: null,
+  previousClaim: null,
   messages: [],
-  demoScenario: null,
   leftPanelView: "claim",
   selectedHighlight: null,
   noteHighlights: [],
   sessionId: null,
+  pendingFixMessage: null,
 };
 
 function reducer(state: StoreState, action: Action): StoreState {
@@ -81,7 +85,11 @@ function reducer(state: StoreState, action: Action): StoreState {
     case "SET_CLINICAL_NOTES":
       return { ...state, clinicalNotes: action.notes };
     case "SET_CLAIM":
-      return { ...state, claim: action.claim };
+      return {
+        ...state,
+        previousClaim: state.previousClaim ?? state.claim,
+        claim: action.claim,
+      };
     case "UPDATE_RISK_SCORE":
       return state.claim
         ? { ...state, claim: { ...state.claim, riskScore: action.score } }
@@ -100,8 +108,6 @@ function reducer(state: StoreState, action: Action): StoreState {
         ...state,
         messages: state.messages.filter((m) => m.id !== action.id),
       };
-    case "SET_DEMO_SCENARIO":
-      return { ...state, demoScenario: action.scenario };
     case "SET_LEFT_PANEL_VIEW":
       return { ...state, leftPanelView: action.view, selectedHighlight: null };
     case "SET_SELECTED_HIGHLIGHT":
@@ -128,6 +134,21 @@ function reducer(state: StoreState, action: Action): StoreState {
         claim: action.claim,
         noteHighlights: action.highlights,
         messages: action.messages,
+      };
+    case "SET_PENDING_FIX_MESSAGE":
+      return { ...state, pendingFixMessage: action.message };
+    case "CLEAR_PENDING_FIX_MESSAGE":
+      return { ...state, pendingFixMessage: null };
+    case "CLEAR_PREVIOUS_CLAIM":
+      return { ...state, previousClaim: null };
+    case "COMPLETE_ALL_TOOL_ACTIVITY":
+      return {
+        ...state,
+        messages: state.messages.map((m) =>
+          m.toolActivity?.status === "searching"
+            ? { ...m, toolActivity: { ...m.toolActivity, status: "complete" as const } }
+            : m
+        ),
       };
     case "RESET":
       return initialState;

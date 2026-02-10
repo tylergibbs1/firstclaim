@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, type ElementType, type ComponentPropsWithoutRef } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 interface ShimmerProps {
   children: string;

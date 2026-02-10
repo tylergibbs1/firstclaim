@@ -6,6 +6,7 @@ import type { ClaimData, NoteHighlight } from "@/lib/types";
 export interface ClaimState {
   claim: ClaimData | null;
   highlights: NoteHighlight[];
+  suggestedPrompts: string[];
   onClaimUpdate: (claim: ClaimData) => void;
   onHighlightsUpdate: (highlights: NoteHighlight[]) => void;
   onToolResult?: (tool: string, result: string) => void;
@@ -285,5 +286,21 @@ Always call this tool when you want to change any claim data.`,
     }
   );
 
-  return [searchIcd10, lookupIcd10, checkAgeSex, updateClaim, addHighlights];
+  const suggestNextActions = tool(
+    "suggest_next_actions",
+    "Suggest 2-4 next actions the user might want to take. MUST be called as the final tool in every response. Each action should be a short imperative phrase that reads as a user command (e.g. 'Add modifier 25 to the E/M', 'Export the claim'). Never phrase as a question.",
+    {
+      actions: z.array(
+        z.string().describe("Short imperative action phrase, e.g. 'Remove the mammography line item'")
+      ).min(2).max(4).describe("2-4 suggested next actions"),
+    },
+    async (args) => {
+      state.suggestedPrompts = args.actions;
+      return {
+        content: [{ type: "text" as const, text: `Suggested ${args.actions.length} next actions.` }],
+      };
+    }
+  );
+
+  return [searchIcd10, lookupIcd10, checkAgeSex, updateClaim, addHighlights, suggestNextActions];
 }

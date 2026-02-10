@@ -11,7 +11,8 @@ import {
 import { useAuth } from "@/components/auth-provider";
 import { useDispatch } from "@/lib/store";
 import type { ChatMessage } from "@/lib/types";
-import { MessageSquare } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MessageSquare, Search, Trash2 } from "lucide-react";
 
 interface SessionSummary {
   id: string;
@@ -59,6 +60,7 @@ export function SessionHistoryDrawer({
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const fetchSessions = useCallback(async () => {
     const token = authSession?.access_token;
@@ -80,6 +82,23 @@ export function SessionHistoryDrawer({
   useEffect(() => {
     if (open) fetchSessions();
   }, [open, fetchSessions]);
+
+  async function handleDelete(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
+    const token = authSession?.access_token;
+    if (!token) return;
+    setSessions((prev) => prev.filter((s) => s.id !== id));
+    await fetch(`/api/sessions/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }
+
+  const filteredSessions = search
+    ? sessions.filter((s) =>
+        s.clinicalNotesPreview.toLowerCase().includes(search.toLowerCase())
+      )
+    : sessions;
 
   async function handleRestore(id: string) {
     const token = authSession?.access_token;
@@ -138,6 +157,16 @@ export function SessionHistoryDrawer({
           </SheetDescription>
         </SheetHeader>
 
+        <div className="relative px-3 py-2 border-b border-border/60">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search sessions…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-7 h-7 text-xs"
+          />
+        </div>
+
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="space-y-3 p-4">
@@ -149,21 +178,23 @@ export function SessionHistoryDrawer({
                 </div>
               ))}
             </div>
-          ) : sessions.length === 0 ? (
+          ) : filteredSessions.length === 0 ? (
             <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
               <MessageSquare className="h-8 w-8 text-muted-foreground/40" />
               <p className="text-sm text-muted-foreground">
-                No completed sessions yet
+                {search ? "No matching sessions" : "No completed sessions yet"}
               </p>
             </div>
           ) : (
             <div className="space-y-1 p-2">
-              {sessions.map((s) => (
-                <button
+              {filteredSessions.map((s) => (
+                <div
                   key={s.id}
-                  onClick={() => handleRestore(s.id)}
-                  disabled={loadingId !== null}
-                  className="group flex w-full flex-col gap-1.5 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-muted/60 disabled:opacity-50"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => loadingId === null && handleRestore(s.id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); loadingId === null && handleRestore(s.id); } }}
+                  className={`group flex w-full flex-col gap-1.5 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-muted/60 cursor-pointer${loadingId !== null ? " opacity-50 pointer-events-none" : ""}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] text-muted-foreground">
@@ -180,6 +211,12 @@ export function SessionHistoryDrawer({
                       <span className="text-[10px] text-muted-foreground">
                         {s.messageCount} message{s.messageCount !== 1 ? "s" : ""}
                       </span>
+                      <button
+                        onClick={(e) => handleDelete(e, s.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
                     </div>
                   </div>
                   <p className="line-clamp-2 text-xs text-foreground/80">
@@ -189,7 +226,7 @@ export function SessionHistoryDrawer({
                   {loadingId === s.id && (
                     <span className="text-[10px] text-primary">Loading…</span>
                   )}
-                </button>
+                </div>
               ))}
             </div>
           )}

@@ -1,22 +1,70 @@
 "use client";
 
-import { useState, memo } from "react";
-import { useStore } from "@/lib/store";
+import { useState, useEffect, useMemo, memo } from "react";
+import { useStore, useDispatch } from "@/lib/store";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, Copy, Check } from "lucide-react";
+import { motion, AnimatePresence, LayoutGroup } from "motion/react";
 import type { ClaimLineItem } from "@/lib/types";
 import { lineItemFee, totalClaimValue, formatUSD } from "@/lib/fee-schedule";
+
+type DiffStatus = "added" | "modified" | undefined;
+
+function computeDiffs(
+  current: ClaimLineItem[],
+  previous: ClaimLineItem[] | undefined
+): Map<number, "added" | "modified"> {
+  if (!previous) return new Map();
+  const prevByLine = new Map(previous.map((li) => [li.lineNumber, li]));
+  const diffs = new Map<number, "added" | "modified">();
+  for (const li of current) {
+    const prev = prevByLine.get(li.lineNumber);
+    if (!prev) {
+      diffs.set(li.lineNumber, "added");
+    } else if (
+      li.cpt !== prev.cpt ||
+      li.units !== prev.units ||
+      li.description !== prev.description ||
+      JSON.stringify(li.modifiers) !== JSON.stringify(prev.modifiers) ||
+      JSON.stringify(li.icd10) !== JSON.stringify(prev.icd10)
+    ) {
+      diffs.set(li.lineNumber, "modified");
+    }
+  }
+  return diffs;
+}
+
+const diffStyles: Record<string, string> = {
+  added: "bg-emerald-500/8 border-l-[3px] border-l-emerald-500",
+  modified: "bg-amber-500/8 border-l-[3px] border-l-amber-500",
+};
 
 const LineItemRow = memo(function LineItemRow({
   item,
   hasActiveFinding,
   showQty,
+  diffStatus,
 }: {
   item: ClaimLineItem;
   hasActiveFinding: boolean;
   showQty: boolean;
+  diffStatus?: DiffStatus;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const diffClass = diffStatus ? diffStyles[diffStatus] : "";
+
+  function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation();
+    const cptStr = item.modifiers.length > 0
+      ? `${item.cpt}-${item.modifiers.join(",")}`
+      : item.cpt;
+    const text = `${cptStr} · ${item.icd10.join(", ")}${item.units > 1 ? ` · ${item.units} units` : ""}`;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
 
   return (
     <>
@@ -30,8 +78,8 @@ const LineItemRow = memo(function LineItemRow({
         }}
         tabIndex={0}
         aria-expanded={expanded}
-        className={`group cursor-pointer border-b border-border/30 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
-          hasActiveFinding ? "border-l-[3px] border-l-primary" : ""
+        className={`group cursor-pointer border-b border-border/30 transition-all duration-700 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
+          diffClass || (hasActiveFinding ? "border-l-[3px] border-l-primary" : "")
         }`}
       >
         <td className="w-10 py-3 pr-2 text-right text-xs tabular-nums text-muted-foreground">
@@ -85,13 +133,26 @@ const LineItemRow = memo(function LineItemRow({
         >
           {lineItemFee(item) === 0 ? "—" : formatUSD(lineItemFee(item))}
         </td>
-        <td className="w-8 py-3">
-          <div className="flex h-6 w-6 items-center justify-center text-muted-foreground/50 transition-colors group-hover:text-muted-foreground">
-            {expanded ? (
-              <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
-            ) : (
-              <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
-            )}
+        <td className="w-16 py-3 pr-2">
+          <div className="flex items-center justify-end gap-1">
+            <button
+              onClick={handleCopy}
+              className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/0 transition-colors group-hover:text-muted-foreground/50 hover:!text-foreground hover:!bg-muted"
+              aria-label="Copy line item"
+            >
+              {copied ? (
+                <Check className="h-3 w-3 text-success" aria-hidden="true" />
+              ) : (
+                <Copy className="h-3 w-3" aria-hidden="true" />
+              )}
+            </button>
+            <div className="flex h-6 w-6 items-center justify-center text-muted-foreground/50 transition-colors group-hover:text-muted-foreground">
+              {expanded ? (
+                <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
+            </div>
           </div>
         </td>
       </tr>
@@ -132,7 +193,22 @@ const LineItemRow = memo(function LineItemRow({
 });
 
 export function ClaimTable() {
-  const { claim } = useStore();
+  const { claim, previousClaim } = useStore();
+  const dispatch = useDispatch();
+
+  const diffs = useMemo(
+    () => computeDiffs(claim?.lineItems ?? [], previousClaim?.lineItems),
+    [claim?.lineItems, previousClaim?.lineItems]
+  );
+
+  // Auto-clear highlights after 5 seconds
+  useEffect(() => {
+    if (!previousClaim) return;
+    const timer = setTimeout(() => {
+      dispatch({ type: "CLEAR_PREVIOUS_CLAIM" });
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [previousClaim, dispatch]);
 
   if (!claim) return null;
 
@@ -172,19 +248,30 @@ export function ClaimTable() {
             <th className="w-16 py-2.5 pr-2 text-right text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Fee
             </th>
-            <th className="w-8 py-2.5" />
+            <th className="w-16 py-2.5" />
           </tr>
         </thead>
-        <tbody>
-          {claim.lineItems.map((item) => (
-            <LineItemRow
-              key={item.lineNumber}
-              item={item}
-              hasActiveFinding={findingLines.has(item.lineNumber)}
-              showQty={showQty}
-            />
-          ))}
-        </tbody>
+        <LayoutGroup>
+          <AnimatePresence mode="popLayout" initial={false}>
+            {claim.lineItems.map((item) => (
+              <motion.tbody
+                key={item.lineNumber}
+                layout
+                initial={{ opacity: 0, scale: 0.97, filter: "blur(4px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, scale: 0.97, filter: "blur(4px)" }}
+                transition={{ type: "spring", stiffness: 350, damping: 30, mass: 1 }}
+              >
+                <LineItemRow
+                  item={item}
+                  hasActiveFinding={findingLines.has(item.lineNumber)}
+                  showQty={showQty}
+                  diffStatus={diffs.get(item.lineNumber)}
+                />
+              </motion.tbody>
+            ))}
+          </AnimatePresence>
+        </LayoutGroup>
         <tfoot>
           <tr className="border-t border-border/40 bg-muted/30">
             <td colSpan={showQty ? 6 : 5} className="py-2.5 pr-2 text-right text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -193,7 +280,7 @@ export function ClaimTable() {
             <td className="w-16 py-2.5 pr-2 text-right font-mono text-sm font-semibold tabular-nums">
               {formatUSD(totalClaimValue(claim))}
             </td>
-            <td className="w-8 py-2.5" />
+            <td className="w-16 py-2.5" />
           </tr>
         </tfoot>
       </table>

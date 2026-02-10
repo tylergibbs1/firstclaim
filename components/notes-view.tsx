@@ -2,10 +2,9 @@
 
 import { useMemo } from "react";
 import { useStore, useDispatch } from "@/lib/store";
-import { DEMO_HIGHLIGHTS } from "@/lib/mock-data";
-import type { NoteHighlight, ChatMessage } from "@/lib/types";
+import type { NoteHighlight } from "@/lib/types";
 import { X } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 interface TextSegment {
   text: string;
@@ -88,43 +87,10 @@ function DetailPanel({ highlight }: { highlight: NoteHighlight }) {
   const dispatch = useDispatch();
 
   function handleAlternativeClick(altCode: string) {
-    const msg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      content: `What about using ${altCode} instead of ${highlight.code}?`,
-      timestamp: new Date(),
-    };
-    dispatch({ type: "ADD_MESSAGE", message: msg });
-
-    setTimeout(() => {
-      const toolMsg: ChatMessage = {
-        id: `tool-${Date.now()}`,
-        role: "tool",
-        content: "Searching CMS guidelines...",
-        timestamp: new Date(),
-        toolActivity: {
-          tool: "WebSearch",
-          query: `${altCode} vs ${highlight.code}`,
-          status: "searching",
-        },
-      };
-      dispatch({ type: "ADD_MESSAGE", message: toolMsg });
-    }, 500);
-
-    setTimeout(() => {
-      const agentMsg: ChatMessage = {
-        id: `agent-${Date.now()}`,
-        role: "agent",
-        content: `I understand your question about using ${altCode} instead of ${highlight.code}. In a live session, I would search CMS guidelines and the ICD-10 database to give you a detailed answer with source citations. This is a demo preview of the conversation interface.`,
-        timestamp: new Date(),
-        suggestedPrompts: [
-          "Tell me more",
-          "What else should I check?",
-          "Export the claim",
-        ],
-      };
-      dispatch({ type: "ADD_MESSAGE", message: agentMsg });
-    }, 2000);
+    dispatch({
+      type: "SET_PENDING_FIX_MESSAGE",
+      message: `What about using ${altCode} instead of ${highlight.code}?`,
+    });
   }
 
   return (
@@ -216,13 +182,11 @@ function DetailPanel({ highlight }: { highlight: NoteHighlight }) {
 }
 
 export function NotesView() {
-  const { clinicalNotes, demoScenario, selectedHighlight, noteHighlights } = useStore();
+  const { clinicalNotes, selectedHighlight, noteHighlights } = useStore();
   const dispatch = useDispatch();
   const reducedMotion = useReducedMotion();
 
-  const highlights = noteHighlights.length > 0
-    ? noteHighlights
-    : demoScenario ? DEMO_HIGHLIGHTS[demoScenario] ?? [] : [];
+  const highlights = noteHighlights;
 
   const segments = useMemo(
     () => buildSegments(clinicalNotes, highlights),

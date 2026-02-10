@@ -15,7 +15,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Shimmer } from "@/components/ui/shimmer";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import type { AnalysisStage } from "@/lib/types";
 
 /* ------------------------------------------------------------------ */

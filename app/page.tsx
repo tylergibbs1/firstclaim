@@ -6,7 +6,7 @@ import { LoginScreen } from "@/components/login-screen";
 import { useStore } from "@/lib/store";
 import { TopBar } from "@/components/top-bar";
 import { InputState } from "@/components/input-state";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 const AnalysisState = dynamic(() =>
   import("@/components/analysis-state").then((m) => ({ default: m.AnalysisState }))

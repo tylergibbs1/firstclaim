@@ -69,14 +69,22 @@ export function RiskScore({ score, size = "md", revenueAtRisk }: RiskScoreProps)
         {displayScore}
       </div>
       <div className="flex flex-col">
-        <span className={`text-sm font-semibold ${colors.label}`}>
-          {label}
-        </span>
-        <span className="text-[11px] text-muted-foreground">Risk Score</span>
-        {revenueAtRisk != null && revenueAtRisk > 0 && (
-          <span className={`text-[11px] font-medium ${colors.label}`}>
-            ${Math.round(revenueAtRisk).toLocaleString("en-US")} at risk
-          </span>
+        {revenueAtRisk != null ? (
+          <>
+            <span className={`text-sm font-semibold ${revenueAtRisk > 0 ? colors.label : "text-success"}`}>
+              ${Math.round(revenueAtRisk).toLocaleString("en-US")} at risk
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              Score: {score}/100
+            </span>
+          </>
+        ) : (
+          <>
+            <span className={`text-sm font-semibold ${colors.label}`}>
+              {label}
+            </span>
+            <span className="text-[11px] text-muted-foreground">Risk Score</span>
+          </>
         )}
       </div>
     </div>

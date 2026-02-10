@@ -217,6 +217,10 @@
     scroll-margin-top: 5rem;
   }
 
+  h1, h2 {
+    font-family: var(--font-heading), Georgia, serif;
+  }
+
   /* Custom tokens (not in shadcn's standard set) must be in @layer base
      to survive shadcn/tailwind.css processing */
   :root {
@@ -250,6 +254,12 @@
     --ring: oklch(0.6500 0.1500 305);
     --sidebar-ring: oklch(0.6500 0.1500 305);
   }
+}
+
+/* Logo stone entrance animation */
+@keyframes logo-fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Accessibility: Honor prefers-reduced-motion */

@@ -14,7 +14,7 @@ const RE_ACTION = /"action"\s*:\s*"([^"]*)/;
 
 interface RunAnalysisOptions {
   clinicalNotes: string;
-  patient: { sex: "M" | "F"; age: number };
+  patient?: { sex?: "M" | "F"; age?: number };
   userId: string;
   onEvent: (event: AnalysisSSEEvent) => void;
 }
@@ -51,6 +51,7 @@ export async function runAnalysis({ clinicalNotes, patient, userId, onEvent }: R
   const claimState: ClaimState = {
     claim: null,
     highlights: [],
+    suggestedPrompts: [],
     onClaimUpdate: (claim: ClaimData) => {
       claimState.claim = claim;
       onEvent({ type: "claim_built", claim });
@@ -90,9 +91,15 @@ export async function runAnalysis({ clinicalNotes, patient, userId, onEvent }: R
 
   emitStage(1);
 
-  const prompt = `Analyze these clinical notes and build a complete medical claim.
+  const patientParts: string[] = [];
+  if (patient?.sex) patientParts.push(patient.sex);
+  if (patient?.age) patientParts.push(`age ${patient.age}`);
+  const patientLine = patientParts.length > 0
+    ? `\nPatient: ${patientParts.join(", ")}`
+    : "\nExtract patient demographics (sex, age) from the clinical notes if mentioned.";
 
-Patient: ${patient.sex}, age ${patient.age}
+  const prompt = `Analyze these clinical notes and build a complete medical claim.
+${patientLine}
 
 Clinical Notes:
 ${clinicalNotes}
@@ -114,7 +121,7 @@ Follow your 5-stage pipeline. Use your tools to search codes, build the claim, a
         mcpServers: { billing: mcpServer },
         allowedTools: ["mcp__billing__*", "WebSearch"],
         includePartialMessages: true,
-        maxTurns: 15,
+        maxTurns: 100,
         permissionMode: "bypassPermissions",
         allowDangerouslySkipPermissions: true,
       },
@@ -224,7 +231,9 @@ Follow your 5-stage pipeline. Use your tools to search codes, build the claim, a
 
   const finalClaim = claimState.claim;
   const finalHighlights = claimState.highlights;
-  const suggestedPrompts = extractSuggestedPrompts(accumulatedText);
+  const suggestedPrompts = claimState.suggestedPrompts.length >= 2
+    ? claimState.suggestedPrompts
+    : extractSuggestedPrompts(accumulatedText);
   const chatSummary = finalClaim ? buildChatSummary(finalClaim) : accumulatedText;
 
   // Emit completion event immediately so the UI transitions without waiting for DB
@@ -290,7 +299,7 @@ function buildChatSummary(claim: ClaimData): string {
 function extractSuggestedPrompts(text: string): string[] {
   const defaults = [
     "Walk me through the findings",
-    "What are the biggest risks?",
+    "Show the biggest risks",
     "Export the claim",
   ];
 
@@ -299,7 +308,7 @@ function extractSuggestedPrompts(text: string): string[] {
   for (let i = lines.length - 1; i >= Math.max(0, lines.length - 6); i--) {
     const line = lines[i].trim();
     const match = line.match(/^[-•*]\s*[""]?(.+?)[""]?\s*$/);
-    if (match && match[1].endsWith("?")) {
+    if (match && match[1].length > 3 && match[1].length < 80) {
       prompts.unshift(match[1]);
     }
   }

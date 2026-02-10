@@ -187,12 +187,13 @@ function SuggestedPrompts({
 }
 
 export function ChatPanel() {
-  const { messages, sessionId } = useStore();
+  const { messages, sessionId, pendingFixMessage } = useStore();
   const dispatch = useDispatch();
   const { session } = useAuth();
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fixInFlightRef = useRef(false);
 
   const lastPrompts = [...messages]
     .reverse()
@@ -203,6 +204,17 @@ export function ChatPanel() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, lastPrompts]);
+
+  useEffect(() => {
+    if (pendingFixMessage && !fixInFlightRef.current) {
+      fixInFlightRef.current = true;
+      dispatch({ type: "CLEAR_PENDING_FIX_MESSAGE" });
+      handleSend(pendingFixMessage).finally(() => {
+        fixInFlightRef.current = false;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingFixMessage]);
 
   async function handleSend(text?: string) {
     const content = text || input.trim();
@@ -382,6 +394,7 @@ export function ChatPanel() {
                 if (!thinkingReplaced) {
                   dispatch({ type: "REMOVE_MESSAGE", id: toolMsgId });
                 }
+                dispatch({ type: "COMPLETE_ALL_TOOL_ACTIVITY" });
                 dispatch({
                   type: "ADD_MESSAGE",
                   message: {
@@ -397,6 +410,7 @@ export function ChatPanel() {
                 if (!thinkingReplaced) {
                   dispatch({ type: "REMOVE_MESSAGE", id: toolMsgId });
                 }
+                dispatch({ type: "COMPLETE_ALL_TOOL_ACTIVITY" });
                 dispatch({
                   type: "ADD_MESSAGE",
                   message: {

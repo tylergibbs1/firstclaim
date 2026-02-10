@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useStore } from "@/lib/store";
+import { useStore, useDispatch } from "@/lib/store";
 import {
   ChevronDown,
   ChevronRight,
@@ -10,7 +10,9 @@ import {
   AlertCircle,
   Info,
   ExternalLink,
+  Wrench,
 } from "lucide-react";
+import { motion, AnimatePresence, LayoutGroup } from "motion/react";
 import type { Finding, FindingSeverity } from "@/lib/types";
 import {
   revenueAtRisk,
@@ -44,6 +46,7 @@ const severityConfig: Record<
 
 function FindingCard({ finding, dollarImpact }: { finding: Finding; dollarImpact?: number }) {
   const [expanded, setExpanded] = useState(false);
+  const dispatch = useDispatch();
   const config = severityConfig[finding.severity];
   const Icon = config.icon;
 
@@ -83,7 +86,7 @@ function FindingCard({ finding, dollarImpact }: { finding: Finding; dollarImpact
           <span className="text-[13px] font-medium">{finding.title}</span>
         </div>
         {dollarImpact != null && dollarImpact > 0 && (
-          <span className={`shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-bold ${config.bgClass} ${config.textClass}`}>
+          <span className={`shrink-0 rounded-lg px-2 py-0.5 font-mono text-[12px] font-bold ${config.bgClass} ${config.textClass}`}>
             {formatUSD(dollarImpact)}
           </span>
         )}
@@ -116,16 +119,34 @@ function FindingCard({ finding, dollarImpact }: { finding: Finding; dollarImpact
                 </p>
               </div>
             )}
-            {finding.sourceUrl && (
-              <a
-                href={finding.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2.5 inline-flex items-center gap-1 text-[11px] text-primary/70 transition-colors hover:text-primary"
-              >
-                <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                View source
-              </a>
+            {(finding.recommendation || finding.sourceUrl) && (
+              <div className="mt-3 flex items-center gap-3">
+                {finding.recommendation && !finding.resolved && (
+                  <button
+                    onClick={() =>
+                      dispatch({
+                        type: "SET_PENDING_FIX_MESSAGE",
+                        message: finding.recommendation!,
+                      })
+                    }
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-[12px] font-medium text-primary transition-colors hover:bg-primary/20"
+                  >
+                    <Wrench className="h-3 w-3" aria-hidden="true" />
+                    Fix this
+                  </button>
+                )}
+                {finding.sourceUrl && (
+                  <a
+                    href={finding.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] text-primary/70 transition-colors hover:text-primary"
+                  >
+                    <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                    View source
+                  </a>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -158,8 +179,8 @@ export function FindingsSection() {
         Findings
       </h3>
 
-      {atRisk > 0 && activeFindings.length > 0 && (
-        <p className="mb-2.5 text-[13px] font-medium text-destructive">
+      {activeFindings.length > 0 && (
+        <p className={`mb-2.5 text-[13px] font-medium ${atRisk > 0 ? "text-destructive" : "text-success"}`}>
           {formatUSD(atRisk)} revenue at risk from {activeFindings.length} unresolved finding{activeFindings.length !== 1 ? "s" : ""}
         </p>
       )}
@@ -170,27 +191,56 @@ export function FindingsSection() {
             <Check className="h-3 w-3 text-success" aria-hidden="true" />
           </div>
           <span className="text-[13px] font-medium text-success">
-            No issues found. Claim looks clean.
+            No issues found — $0 at risk. Claim looks clean.
           </span>
         </div>
       )}
 
-      <div className="space-y-2">
-        {sorted.map((f) => (
-          <FindingCard key={f.id} finding={f} dollarImpact={findingRevenueImpact(f, claim.lineItems)} />
-        ))}
-      </div>
+      <LayoutGroup>
+        <motion.div layout transition={{ type: "spring", stiffness: 350, damping: 30, mass: 1 }} className="space-y-2">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {sorted.map((f) => (
+              <motion.div
+                key={f.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
+                transition={{ type: "spring", stiffness: 350, damping: 30, mass: 1 }}
+              >
+                <FindingCard finding={f} dollarImpact={findingRevenueImpact(f, claim.lineItems)} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
+      </LayoutGroup>
 
-      {resolvedFindings.length > 0 && (
-        <div className="mt-3 space-y-1.5">
-          <h4 className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-            Resolved
-          </h4>
-          {resolvedFindings.map((f) => (
-            <FindingCard key={f.id} finding={f} />
-          ))}
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {resolvedFindings.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            transition={{ type: "spring", stiffness: 350, damping: 30, mass: 1 }}
+            className="mt-3 space-y-1.5"
+          >
+            <h4 className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+              Resolved
+            </h4>
+            <AnimatePresence initial={false}>
+              {resolvedFindings.map((f) => (
+                <motion.div
+                  key={f.id}
+                  initial={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                  transition={{ type: "spring", stiffness: 350, damping: 30, mass: 1 }}
+                >
+                  <FindingCard finding={f} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

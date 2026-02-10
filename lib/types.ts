@@ -79,8 +79,6 @@ export interface ChatMessage {
   suggestedPrompts?: string[];
 }
 
-export type DemoScenario = "a" | "b" | "c";
-
 export type LeftPanelView = "claim" | "notes";
 
 export interface NoteHighlight {

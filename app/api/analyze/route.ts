@@ -11,8 +11,8 @@ export async function POST(req: Request) {
 
   const { clinicalNotes, patient } = await req.json();
 
-  if (!clinicalNotes || !patient) {
-    return Response.json({ error: "Missing clinicalNotes or patient" }, { status: 400 });
+  if (!clinicalNotes) {
+    return Response.json({ error: "Missing clinicalNotes" }, { status: 400 });
   }
 
   const encoder = new TextEncoder();

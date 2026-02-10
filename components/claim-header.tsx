@@ -2,6 +2,7 @@
 
 import { useStore, useDispatch } from "@/lib/store";
 import { revenueAtRisk, formatUSD } from "@/lib/fee-schedule";
+import NumberFlow from "@number-flow/react";
 import { Calendar, User } from "lucide-react";
 import type { LeftPanelView } from "@/lib/types";
 
@@ -23,7 +24,7 @@ const riskColors = {
 };
 
 export function ClaimHeader() {
-  const { claim, leftPanelView } = useStore();
+  const { claim, leftPanelView, previousClaim } = useStore();
   const dispatch = useDispatch();
 
   if (!claim) return null;
@@ -60,6 +61,9 @@ export function ClaimHeader() {
               }`}
             >
               {tab.label}
+              {tab.key === "claim" && leftPanelView !== "claim" && previousClaim && (
+                <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              )}
             </button>
           ))}
         </div>
@@ -79,18 +83,16 @@ export function ClaimHeader() {
           <span>{patientSummary}</span>
         </div>
 
-        {/* Right: risk + revenue */}
+        {/* Right: revenue + risk badge */}
         <div className="flex items-center gap-2">
-          {revenue > 0 && (
-            <span className="text-[12px] font-medium tabular-nums text-destructive">
-              {formatUSD(revenue)} at risk
-            </span>
-          )}
+          <span className={`text-[13px] font-semibold tabular-nums ${revenue > 0 ? "text-destructive" : "text-success"}`}>
+            {formatUSD(revenue)} at risk
+          </span>
           <div
-            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-semibold tabular-nums ${riskColors[color]}`}
+            className={`flex items-center gap-1 rounded-lg px-2 py-0.5 text-[11px] font-semibold tabular-nums ${riskColors[color]}`}
             aria-label={`Risk score: ${claim.riskScore}, ${riskLabel}`}
           >
-            <span>{claim.riskScore}</span>
+            <NumberFlow value={claim.riskScore} />
             <span className="font-medium">{riskLabel}</span>
           </div>
         </div>
