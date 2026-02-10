@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw, Code2, X } from "lucide-react";
+import { Download, Code2, X } from "lucide-react";
 
 export function ActionBar() {
   const { claim } = useStore();
@@ -36,15 +36,7 @@ export function ActionBar() {
       <div className="sticky bottom-0 flex items-center gap-2 bg-card/90 px-4 py-3 backdrop-blur-md">
         <Button size="sm" className="h-8 gap-1.5 rounded-xl px-4 text-xs shadow-sm">
           <Download className="h-3 w-3" aria-hidden="true" />
-          Export
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-8 gap-1.5 rounded-xl border-tertiary/30 px-4 text-xs text-tertiary hover:bg-tertiary/5 hover:text-tertiary"
-        >
-          <RefreshCw className="h-3 w-3" aria-hidden="true" />
-          Re-validate
+          Export Claim
         </Button>
         <button
           onClick={() => setShowJson(!showJson)}

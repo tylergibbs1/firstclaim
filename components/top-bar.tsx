@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useStore, useDispatch } from "@/lib/store";
+import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { STAGE_LABELS } from "@/lib/types";
 import type { DemoScenario } from "@/lib/types";
@@ -9,7 +12,11 @@ import {
   DEMO_CLAIMS,
   DEMO_INITIAL_MESSAGES,
 } from "@/lib/mock-data";
-import { Plus, Sparkles } from "lucide-react";
+import { Clock, LogOut, Plus, Sparkles } from "lucide-react";
+
+const SessionHistoryDrawer = dynamic(() =>
+  import("@/components/session-history-drawer").then((m) => ({ default: m.SessionHistoryDrawer }))
+);
 
 const SCENARIOS: { key: DemoScenario; label: string }[] = [
   { key: "a", label: "Clean Claim" },
@@ -20,6 +27,8 @@ const SCENARIOS: { key: DemoScenario; label: string }[] = [
 export function TopBar() {
   const { appState, analysisStage, demoScenario } = useStore();
   const dispatch = useDispatch();
+  const { user, signOut } = useAuth();
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   function handleScenario(scenario: DemoScenario) {
     dispatch({ type: "RESET" });
@@ -50,7 +59,17 @@ export function TopBar() {
           </span>
         </div>
 
-        {(appState === "analyzing" || appState === "conversation") && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setHistoryOpen(true)}
+          aria-label="Session history"
+          className="h-8 w-8 rounded-xl p-0 text-muted-foreground hover:text-foreground"
+        >
+          <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+        </Button>
+
+        {appState === "analyzing" && (
           <div className="flex items-center gap-2.5">
             <div className="flex gap-1" aria-label={`Stage ${analysisStage} of 5`} role="progressbar" aria-valuenow={analysisStage} aria-valuemin={1} aria-valuemax={5}>
               {([1, 2, 3, 4, 5] as const).map((s) => (
@@ -65,9 +84,7 @@ export function TopBar() {
               ))}
             </div>
             <span className="text-xs text-muted-foreground">
-              {appState === "conversation"
-                ? "Complete"
-                : STAGE_LABELS[analysisStage]}
+              {STAGE_LABELS[analysisStage]}
             </span>
           </div>
         )}
@@ -81,7 +98,7 @@ export function TopBar() {
               role="tab"
               aria-selected={demoScenario === s.key}
               onClick={() => handleScenario(s.key)}
-              className={`rounded-lg px-3.5 py-1 text-[11px] font-medium transition-all duration-200 ${
+              className={`rounded-lg px-3.5 py-1 text-[11px] font-medium transition-colors duration-200 ${
                 demoScenario === s.key
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -104,7 +121,33 @@ export function TopBar() {
             New
           </Button>
         )}
+
+        {user && (
+          <div className="flex items-center gap-2 border-l border-border/40 pl-3">
+            {user.user_metadata?.avatar_url && (
+              <img
+                src={user.user_metadata.avatar_url}
+                alt=""
+                width={24}
+                height={24}
+                className="h-6 w-6 rounded-full"
+                referrerPolicy="no-referrer"
+              />
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={signOut}
+              aria-label="Sign out"
+              className="h-8 w-8 rounded-xl p-0 text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+            </Button>
+          </div>
+        )}
       </nav>
+
+      <SessionHistoryDrawer open={historyOpen} onOpenChange={setHistoryOpen} />
     </header>
   );
 }

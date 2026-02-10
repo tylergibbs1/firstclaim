@@ -62,7 +62,7 @@ function FindingCard({ finding, dollarImpact }: { finding: Finding; dollarImpact
 
   return (
     <div
-      className={`overflow-hidden rounded-xl border ${config.bgClass} transition-all`}
+      className={`overflow-hidden rounded-xl border ${config.bgClass} transition-colors`}
     >
       <button
         onClick={() => setExpanded(!expanded)}
@@ -95,36 +95,41 @@ function FindingCard({ finding, dollarImpact }: { finding: Finding; dollarImpact
           )}
         </div>
       </button>
-      {expanded && (
-        <div className="border-t border-border/20 bg-card/50 px-4 py-3.5">
-          <p className="text-[13px] leading-relaxed text-muted-foreground break-words">
-            {finding.description}
-          </p>
-          {finding.recommendation && (
-            <div className="mt-3 rounded-lg bg-muted/50 px-3 py-2.5">
-              <p className="text-[12px]">
-                <span className="font-semibold text-foreground/80">
-                  Recommendation:
-                </span>{" "}
-                <span className="text-muted-foreground">
-                  {finding.recommendation}
-                </span>
-              </p>
-            </div>
-          )}
-          {finding.sourceUrl && (
-            <a
-              href={finding.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2.5 inline-flex items-center gap-1 text-[11px] text-primary/70 transition-colors hover:text-primary"
-            >
-              <ExternalLink className="h-3 w-3" aria-hidden="true" />
-              View source
-            </a>
-          )}
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-out"
+        style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div className="border-t border-border/20 bg-card/50 px-4 py-3.5">
+            <p className="text-[13px] leading-relaxed text-muted-foreground break-words">
+              {finding.description}
+            </p>
+            {finding.recommendation && (
+              <div className="mt-3 rounded-lg bg-muted/50 px-3 py-2.5">
+                <p className="text-[12px]">
+                  <span className="font-semibold text-foreground/80">
+                    Recommendation:
+                  </span>{" "}
+                  <span className="text-muted-foreground">
+                    {finding.recommendation}
+                  </span>
+                </p>
+              </div>
+            )}
+            {finding.sourceUrl && (
+              <a
+                href={finding.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2.5 inline-flex items-center gap-1 text-[11px] text-primary/70 transition-colors hover:text-primary"
+              >
+                <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                View source
+              </a>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -134,8 +139,11 @@ export function FindingsSection() {
 
   if (!claim) return null;
 
-  const activeFindings = claim.findings.filter((f) => !f.resolved);
-  const resolvedFindings = claim.findings.filter((f) => f.resolved);
+  const activeFindings: Finding[] = [];
+  const resolvedFindings: Finding[] = [];
+  for (const f of claim.findings) {
+    (f.resolved ? resolvedFindings : activeFindings).push(f);
+  }
 
   const order: FindingSeverity[] = ["critical", "warning", "info"];
   const sorted = [...activeFindings].sort(

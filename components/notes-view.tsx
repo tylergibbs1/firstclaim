@@ -5,6 +5,7 @@ import { useStore, useDispatch } from "@/lib/store";
 import { DEMO_HIGHLIGHTS } from "@/lib/mock-data";
 import type { NoteHighlight, ChatMessage } from "@/lib/types";
 import { X } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 interface TextSegment {
   text: string;
@@ -127,7 +128,7 @@ function DetailPanel({ highlight }: { highlight: NoteHighlight }) {
   }
 
   return (
-    <div className="flex w-80 shrink-0 flex-col border-l border-border/40 bg-card/80">
+    <div className="flex w-80 shrink-0 flex-col bg-card overscroll-contain">
       <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
         <h3 className="text-xs font-semibold text-foreground">
           Code Detail
@@ -215,10 +216,13 @@ function DetailPanel({ highlight }: { highlight: NoteHighlight }) {
 }
 
 export function NotesView() {
-  const { clinicalNotes, demoScenario, selectedHighlight } = useStore();
+  const { clinicalNotes, demoScenario, selectedHighlight, noteHighlights } = useStore();
   const dispatch = useDispatch();
+  const reducedMotion = useReducedMotion();
 
-  const highlights = demoScenario ? DEMO_HIGHLIGHTS[demoScenario] ?? [] : [];
+  const highlights = noteHighlights.length > 0
+    ? noteHighlights
+    : demoScenario ? DEMO_HIGHLIGHTS[demoScenario] ?? [] : [];
 
   const segments = useMemo(
     () => buildSegments(clinicalNotes, highlights),
@@ -226,8 +230,8 @@ export function NotesView() {
   );
 
   return (
-    <div className="flex h-full min-h-0">
-      <div className="flex-1 overflow-y-auto p-5">
+    <div className="relative h-full min-h-0">
+      <div className="h-full overflow-y-auto p-5">
         <div className="whitespace-pre-wrap break-words font-sans text-[13px] leading-relaxed text-muted-foreground">
           {segments.map((seg, i) => {
             if (!seg.highlight) {
@@ -247,7 +251,7 @@ export function NotesView() {
                       isActive ? null : seg.highlight,
                   })
                 }
-                className={`cursor-pointer border-b-2 transition-all ${
+                className={`cursor-pointer border-b-2 transition-colors ${
                   isLow
                     ? "border-destructive"
                     : "border-primary"
@@ -266,7 +270,19 @@ export function NotesView() {
         </div>
       </div>
 
-      {selectedHighlight && <DetailPanel highlight={selectedHighlight} />}
+      <AnimatePresence>
+        {selectedHighlight && (
+          <motion.div
+            initial={reducedMotion ? false : { x: "100%" }}
+            animate={{ x: 0 }}
+            exit={reducedMotion ? { opacity: 0 } : { x: "100%" }}
+            transition={reducedMotion ? { duration: 0 } : { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+            className="absolute inset-y-0 right-0 shadow-lg"
+          >
+            <DetailPanel highlight={selectedHighlight} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -56,6 +56,7 @@ export interface ToolActivity {
   tool: string;
   query: string;
   status: "searching" | "complete" | "error";
+  result?: string;
 }
 
 export interface ClaimChange {

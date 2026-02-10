@@ -1,36 +1,80 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { useAuth } from "@/components/auth-provider";
+import { LoginScreen } from "@/components/login-screen";
 import { useStore } from "@/lib/store";
 import { TopBar } from "@/components/top-bar";
 import { InputState } from "@/components/input-state";
-import { AnalysisState } from "@/components/analysis-state";
-import { ClaimWorkspace } from "@/components/claim-workspace";
-import { ChatPanel } from "@/components/chat-panel";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+
+const AnalysisState = dynamic(() =>
+  import("@/components/analysis-state").then((m) => ({ default: m.AnalysisState }))
+);
+const ClaimWorkspace = dynamic(() =>
+  import("@/components/claim-workspace").then((m) => ({ default: m.ClaimWorkspace }))
+);
+const ChatPanel = dynamic(() =>
+  import("@/components/chat-panel").then((m) => ({ default: m.ChatPanel }))
+);
+
+const transition = { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] as const };
 
 export default function Page() {
+  const { user, isLoading } = useAuth();
   const { appState } = useStore();
+  const reducedMotion = useReducedMotion();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-dvh items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginScreen />;
+  }
+
+  const motionProps = reducedMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -8 },
+        transition,
+      };
 
   return (
     <div className="flex h-dvh flex-col">
       <TopBar />
 
-      {appState === "input" && <InputState />}
+      <main id="main-content" className="flex flex-1 flex-col overflow-hidden" aria-live="polite">
+        <AnimatePresence mode="wait">
+          {appState === "input" ? (
+            <motion.div key="input" className="flex flex-1 flex-col" {...motionProps}>
+              <InputState />
+            </motion.div>
+          ) : appState === "analyzing" ? (
+            <motion.div key="analyzing" className="flex flex-1 flex-col" {...motionProps}>
+              <AnalysisState />
+            </motion.div>
+          ) : (
+            <motion.div key="conversation" className="flex flex-1 overflow-hidden" {...motionProps}>
+              {/* Left panel: Claim workspace — 58% */}
+              <div className="flex w-[58%] flex-col">
+                <ClaimWorkspace />
+              </div>
 
-      {appState === "analyzing" && <AnalysisState />}
-
-      {appState === "conversation" && (
-        <div className="flex flex-1 overflow-hidden">
-          {/* Left panel: Claim workspace — 58% */}
-          <div className="flex w-[58%] flex-col">
-            <ClaimWorkspace />
-          </div>
-
-          {/* Right panel: Conversation — 42% */}
-          <div className="flex w-[42%] flex-col border-l border-border/40">
-            <ChatPanel />
-          </div>
-        </div>
-      )}
+              {/* Right panel: Conversation — 42% */}
+              <div className="flex w-[42%] flex-col border-l border-border/40">
+                <ChatPanel />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
     </div>
   );
 }
