@@ -23,6 +23,11 @@
 # misc
 .DS_Store
 *.pem
+.mcp.json
+.breadcrumbs.json
+
+# reference data
+/data
 
 # debug
 npm-debug.log*
