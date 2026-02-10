@@ -1,11 +1,6 @@
 import { runChat } from "@/lib/agent/run-chat";
 import { getUserId } from "@/lib/auth";
 
-// Agent SDK tries to write to ~/.claude/debug — Vercel's fs is read-only except /tmp
-if (!process.env.CLAUDE_CONFIG_DIR) {
-  process.env.CLAUDE_CONFIG_DIR = "/tmp/.claude";
-}
-
 export const maxDuration = 120;
 
 export async function POST(req: Request) {
