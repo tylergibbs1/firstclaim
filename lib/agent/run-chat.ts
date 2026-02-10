@@ -100,7 +100,7 @@ export async function runChat({ sessionId, message, userId, onEvent }: RunChatOp
         maxTurns: 100,
         permissionMode: "bypassPermissions",
         allowDangerouslySkipPermissions: true,
-        ...(agentSessionId ? { resume: agentSessionId } : {}),
+        // Don't resume — serverless invocations are stateless, previous sessions don't persist
       },
     });
 
