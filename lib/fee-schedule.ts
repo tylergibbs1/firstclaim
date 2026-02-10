@@ -28,17 +28,17 @@ export function lineItemFee(item: ClaimLineItem): number {
 
 /** Sum of all line item fees on a claim. */
 export function totalClaimValue(claim: ClaimData): number {
-  return claim.lineItems.reduce((sum, item) => sum + lineItemFee(item), 0);
+  return (claim.lineItems ?? []).reduce((sum, item) => sum + lineItemFee(item), 0);
 }
 
 /** Sum of fees for line items that have unresolved findings. */
 export function revenueAtRisk(claim: ClaimData): number {
   const flaggedLines = new Set(
-    claim.findings
+    (claim.findings ?? [])
       .filter((f) => !f.resolved && f.relatedLineNumber != null)
       .map((f) => f.relatedLineNumber)
   );
-  return claim.lineItems
+  return (claim.lineItems ?? [])
     .filter((item) => flaggedLines.has(item.lineNumber))
     .reduce((sum, item) => sum + lineItemFee(item), 0);
 }

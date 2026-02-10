@@ -234,18 +234,11 @@ Follow your 5-stage pipeline. Use your tools to search codes, build the claim, a
     : extractSuggestedPrompts(accumulatedText);
   const chatSummary = finalClaim ? buildChatSummary(finalClaim) : accumulatedText;
 
-  // Emit completion event immediately so the UI transitions without waiting for DB
-  onEvent({
-    type: "analysis_complete",
-    sessionId,
-    claim: finalClaim!,
-    summary: chatSummary,
-    suggestedPrompts,
-    highlights: finalHighlights.length > 0 ? finalHighlights : undefined,
-  });
-
-  // Persist to Supabase in background (don't block the response)
-  Promise.all([
+  // Persist to Supabase BEFORE emitting completion — the chat API loads the
+  // session from DB, so the claim must be written before the client can send
+  // a follow-up message. (Fire-and-forget here caused a race condition where
+  // the chat agent saw a null claim.)
+  await Promise.all([
     supabase
       .from("sessions")
       .update({
@@ -263,10 +256,20 @@ Follow your 5-stage pipeline. Use your tools to search codes, build the claim, a
       suggested_prompts: suggestedPrompts,
     }),
   ]).catch((err) => console.error("Failed to persist analysis results:", err));
+
+  // Emit completion event after DB write so the chat API can load the claim
+  onEvent({
+    type: "analysis_complete",
+    sessionId,
+    claim: finalClaim!,
+    summary: chatSummary,
+    suggestedPrompts,
+    highlights: finalHighlights.length > 0 ? finalHighlights : undefined,
+  });
 }
 
 function buildChatSummary(claim: ClaimData): string {
-  const openFindings = claim.findings.filter((f) => !f.resolved);
+  const openFindings = (claim.findings ?? []).filter((f) => !f.resolved);
   const critical = openFindings.filter((f) => f.severity === "critical");
   const warnings = openFindings.filter((f) => f.severity === "warning");
 

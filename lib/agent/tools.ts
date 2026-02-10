@@ -190,6 +190,9 @@ Always call this tool when you want to change any claim data.`,
         case "set":
           if (!args.claim) return { content: [{ type: "text" as const, text: "Missing claim object for 'set' action" }], isError: true };
           claim = args.claim as ClaimData;
+          // Ensure required arrays are never undefined (agent may omit them)
+          if (!claim.findings) claim = { ...claim, findings: [] };
+          if (!claim.lineItems) claim = { ...claim, lineItems: [] };
           break;
 
         case "add_line_item":

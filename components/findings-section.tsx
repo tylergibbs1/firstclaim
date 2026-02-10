@@ -163,7 +163,7 @@ export function FindingsSection() {
     if (!claim) return { sorted: [], resolvedFindings: [], activeFindings: [], atRisk: 0 };
     const active: Finding[] = [];
     const resolved: Finding[] = [];
-    for (const f of claim.findings) {
+    for (const f of claim.findings ?? []) {
       (f.resolved ? resolved : active).push(f);
     }
     const order: FindingSeverity[] = ["critical", "warning", "info"];
@@ -212,7 +212,7 @@ export function FindingsSection() {
                 exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
                 transition={motionTransition}
               >
-                <FindingCard finding={f} dollarImpact={findingRevenueImpact(f, claim.lineItems)} />
+                <FindingCard finding={f} dollarImpact={findingRevenueImpact(f, claim.lineItems ?? [])} />
               </motion.div>
             ))}
           </AnimatePresence>
