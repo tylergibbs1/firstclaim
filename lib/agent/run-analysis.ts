@@ -192,7 +192,7 @@ Follow your 5-stage pipeline. Use your tools to search codes, build the claim, a
               const action = input.action as string;
               if (action === "set") emitStage(3);
               else if (action === "add_finding") emitStage(4);
-              else if (action === "set_risk_score") emitStage(5);
+              else if (action === "set_risk_score") emitStage(4);
             }
           }
         }
@@ -211,9 +211,7 @@ Follow your 5-stage pipeline. Use your tools to search codes, build the claim, a
       }
 
       if (message.type === "result") {
-        if (message.subtype === "success") {
-          emitStage(5);
-        } else {
+        if (message.subtype !== "success") {
           const errors = "errors" in message ? (message.errors as string[]) : [];
           onEvent({
             type: "error",
