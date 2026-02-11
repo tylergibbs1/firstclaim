@@ -38,8 +38,8 @@ function computeDiffs(
 }
 
 const diffStyles: Record<string, string> = {
-  added: "bg-emerald-500/8 border-l-[3px] border-l-emerald-500",
-  modified: "bg-amber-500/8 border-l-[3px] border-l-amber-500",
+  added: "bg-success/8 border-l-[3px] border-l-success",
+  modified: "bg-warning/8 border-l-[3px] border-l-warning",
 };
 
 const LineItemRow = memo(function LineItemRow({

@@ -48,10 +48,10 @@ function relativeDate(iso: string): string {
 }
 
 function riskBadgeColor(score: number): string {
-  if (score <= 25) return "bg-green-500/15 text-green-700";
-  if (score <= 50) return "bg-yellow-500/15 text-yellow-700";
-  if (score <= 75) return "bg-orange-500/15 text-orange-700";
-  return "bg-red-500/15 text-red-700";
+  if (score <= 25) return "bg-success/15 text-success";
+  if (score <= 50) return "bg-warning/15 text-warning";
+  if (score <= 75) return "bg-primary/15 text-primary";
+  return "bg-destructive/15 text-destructive";
 }
 
 export function SessionHistoryDrawer({

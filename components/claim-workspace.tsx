@@ -21,7 +21,7 @@ export function ClaimWorkspace() {
 
   return (
     <div className="relative flex h-full flex-col">
-      <div className={`shrink-0 transition-shadow duration-200 ${scrolled ? "shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)]" : ""}`}>
+      <div className={`shrink-0 transition-shadow duration-200 ${scrolled ? "shadow-sm" : ""}`}>
         <ClaimHeader />
       </div>
       <div className="relative flex-1 min-h-0">
