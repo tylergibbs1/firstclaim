@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback, memo, useMemo } from "react";
 import { useChat, useDispatch } from "@/lib/store";
 import { useChatStream } from "@/lib/use-chat-stream";
-import { ArrowUp, ChevronRight } from "lucide-react";
+import { ArrowUp, ChevronDown, ChevronRight } from "lucide-react";
 import { Shimmer } from "@/components/ui/shimmer";
 import { Streamdown } from "streamdown";
 import { code } from "@streamdown/code";
@@ -196,14 +196,32 @@ export function ChatPanel() {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const fixInFlightRef = useRef(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const userScrolledRef = useRef(false);
 
   const lastPrompts = useMemo(
     () => [...messages].reverse().find((m) => m.suggestedPrompts?.length)?.suggestedPrompts,
     [messages]
   );
 
-  useEffect(() => {
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const threshold = 40;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+    setIsAtBottom(atBottom);
+    userScrolledRef.current = !atBottom;
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
+      userScrolledRef.current = false;
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!userScrolledRef.current && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, lastPrompts]);
@@ -234,7 +252,7 @@ export function ChatPanel() {
 
   return (
     <div className="flex h-full flex-col bg-background/50">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5" aria-live="polite" aria-relevant="additions">
+      <div ref={scrollRef} onScroll={handleScroll} className="relative flex-1 overflow-y-auto px-4 py-5" aria-live="polite" aria-relevant="additions">
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
@@ -246,7 +264,18 @@ export function ChatPanel() {
         )}
       </div>
 
-      <div className="border-t border-border/40 bg-card/80 p-3 backdrop-blur-md">
+      <div className="relative border-t border-border/40 bg-card/80 p-3 backdrop-blur-md">
+        <button
+          onClick={scrollToBottom}
+          aria-label="Scroll to bottom"
+          className={`absolute -top-11 left-1/2 z-10 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full border border-border/50 bg-card shadow-md transition-all duration-150 ease-out hover:bg-muted ${
+            isAtBottom
+              ? "pointer-events-none translate-y-2 scale-95 opacity-0"
+              : "translate-y-0 scale-100 opacity-100"
+          }`}
+        >
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        </button>
         <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-3 py-1 shadow-sm ring-1 ring-border/10 focus-within:ring-2 focus-within:ring-purple/20">
           <label htmlFor="chat-input" className="sr-only">
             Message
