@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { useApp } from "@/lib/store";
+import { useAnalysis } from "@/lib/store";
 import {
   ShieldCheck,
   Sparkles,
@@ -156,7 +156,7 @@ function ToolCardRow({ card, isActive }: { card: ToolCard; isActive: boolean }) 
 /* ------------------------------------------------------------------ */
 
 export function AnalysisState() {
-  const { analysisStage, analysisToolActivity } = useApp();
+  const { analysisStage, analysisToolActivity } = useAnalysis();
   const isDone = analysisStage >= 5;
 
   /* Card state */

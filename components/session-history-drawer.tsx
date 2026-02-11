@@ -25,6 +25,7 @@ interface SessionSummary {
 
 let cachedSessions: SessionSummary[] | null = null;
 let cacheTimestamp = 0;
+let cacheUserId: string | null = null;
 const CACHE_TTL = 30_000;
 
 const shortDateFormat = new Intl.DateTimeFormat("en-US", {
@@ -68,10 +69,12 @@ export function SessionHistoryDrawer({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
+  const userId = authSession?.user?.id ?? null;
+
   const fetchSessions = useCallback(async () => {
     const token = authSession?.access_token;
-    if (!token) return;
-    if (cachedSessions && Date.now() - cacheTimestamp < CACHE_TTL) {
+    if (!token || !userId) return;
+    if (cachedSessions && cacheUserId === userId && Date.now() - cacheTimestamp < CACHE_TTL) {
       setSessions(cachedSessions);
       return;
     }
@@ -84,12 +87,13 @@ export function SessionHistoryDrawer({
         const data = await res.json();
         cachedSessions = data.sessions;
         cacheTimestamp = Date.now();
+        cacheUserId = userId;
         setSessions(data.sessions);
       }
     } finally {
       setLoading(false);
     }
-  }, [authSession?.access_token]);
+  }, [authSession?.access_token, userId]);
 
   useEffect(() => {
     if (open) fetchSessions();

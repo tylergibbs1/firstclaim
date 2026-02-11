@@ -31,10 +31,13 @@ export interface ChatSlice {
   pendingFixMessage: string | null;
 }
 
-export interface AppSlice {
-  appState: AppState;
+export interface AnalysisSlice {
   analysisStage: AnalysisStage;
   analysisToolActivity: { tool: string; query: string; result?: string } | null;
+}
+
+export interface AppSlice {
+  appState: AppState;
   clinicalNotes: string;
   leftPanelView: LeftPanelView;
   selectedHighlight: NoteHighlight | null;
@@ -46,7 +49,7 @@ export interface AppSlice {
 /*  Combined state & actions                                           */
 /* ------------------------------------------------------------------ */
 
-type StoreState = ClaimSlice & ChatSlice & AppSlice;
+type StoreState = ClaimSlice & ChatSlice & AnalysisSlice & AppSlice;
 
 type Action =
   | { type: "SET_APP_STATE"; state: AppState }
@@ -188,10 +191,13 @@ const ChatContext = createContext<ChatSlice>({
   pendingFixMessage: null,
 });
 
-const AppContext = createContext<AppSlice>({
-  appState: "input",
+const AnalysisContext = createContext<AnalysisSlice>({
   analysisStage: 1,
   analysisToolActivity: null,
+});
+
+const AppContext = createContext<AppSlice>({
+  appState: "input",
   clinicalNotes: "",
   leftPanelView: "claim",
   selectedHighlight: null,
@@ -218,11 +224,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [state.messages, state.pendingFixMessage]
   );
 
+  const analysisSlice = useMemo<AnalysisSlice>(
+    () => ({ analysisStage: state.analysisStage, analysisToolActivity: state.analysisToolActivity }),
+    [state.analysisStage, state.analysisToolActivity]
+  );
+
   const appSlice = useMemo<AppSlice>(
     () => ({
       appState: state.appState,
-      analysisStage: state.analysisStage,
-      analysisToolActivity: state.analysisToolActivity,
       clinicalNotes: state.clinicalNotes,
       leftPanelView: state.leftPanelView,
       selectedHighlight: state.selectedHighlight,
@@ -231,8 +240,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }),
     [
       state.appState,
-      state.analysisStage,
-      state.analysisToolActivity,
       state.clinicalNotes,
       state.leftPanelView,
       state.selectedHighlight,
@@ -245,9 +252,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     <DispatchContext value={dispatch}>
       <ClaimContext value={claimSlice}>
         <ChatContext value={chatSlice}>
-          <AppContext value={appSlice}>
-            {children}
-          </AppContext>
+          <AnalysisContext value={analysisSlice}>
+            <AppContext value={appSlice}>
+              {children}
+            </AppContext>
+          </AnalysisContext>
         </ChatContext>
       </ClaimContext>
     </DispatchContext>
@@ -268,7 +277,12 @@ export function useChat() {
   return useContext(ChatContext);
 }
 
-/** App-level UI/session state. */
+/** Analysis stage & tool activity — re-renders only during analysis streaming. */
+export function useAnalysis() {
+  return useContext(AnalysisContext);
+}
+
+/** App-level UI/session state — no longer includes analysis streaming fields. */
 export function useApp() {
   return useContext(AppContext);
 }
@@ -278,7 +292,7 @@ export function useDispatch() {
   return useContext(DispatchContext);
 }
 
-/** @deprecated Use useClaim(), useChat(), or useApp() for targeted subscriptions. */
+/** @deprecated Use useClaim(), useChat(), useAnalysis(), or useApp() for targeted subscriptions. */
 export function useStore() {
-  return { ...useClaim(), ...useChat(), ...useApp() };
+  return { ...useClaim(), ...useChat(), ...useAnalysis(), ...useApp() };
 }

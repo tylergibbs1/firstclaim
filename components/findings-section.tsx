@@ -176,17 +176,20 @@ export function FindingsSection() {
 
   const { sorted, opportunityFindings, resolvedFindings, activeFindings, atRisk } = useMemo(() => {
     if (!claim) return { sorted: [], opportunityFindings: [], resolvedFindings: [], activeFindings: [], atRisk: 0 };
-    const active: Finding[] = [];
+    const critical: Finding[] = [];
+    const warnings: Finding[] = [];
+    const infos: Finding[] = [];
     const opportunities: Finding[] = [];
     const resolved: Finding[] = [];
     for (const f of claim.findings ?? []) {
       if (f.resolved) resolved.push(f);
+      else if (f.severity === "critical") critical.push(f);
+      else if (f.severity === "warning") warnings.push(f);
       else if (f.severity === "opportunity") opportunities.push(f);
-      else active.push(f);
+      else infos.push(f);
     }
-    const order: FindingSeverity[] = ["critical", "warning", "info", "opportunity"];
-    const s = [...active].sort((a, b) => order.indexOf(a.severity) - order.indexOf(b.severity));
-    return { sorted: s, opportunityFindings: opportunities, resolvedFindings: resolved, activeFindings: active, atRisk: revenueAtRisk(claim) };
+    const active = [...critical, ...warnings, ...infos];
+    return { sorted: active, opportunityFindings: opportunities, resolvedFindings: resolved, activeFindings: active, atRisk: revenueAtRisk(claim) };
   }, [claim]);
 
   if (!claim) return null;
@@ -247,22 +250,24 @@ export function FindingsSection() {
             <p className="mb-2.5 text-[13px] font-medium text-warning-foreground">
               {opportunityFindings.length} documentation opportunity{opportunityFindings.length !== 1 ? "s" : ""} identified
             </p>
-            <div className="space-y-2">
-              <AnimatePresence mode="popLayout" initial={false}>
-                {opportunityFindings.map((f) => (
-                  <motion.div
-                    key={f.id}
-                    layout={!reducedMotion}
-                    initial={reducedMotion ? false : { opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
-                    transition={motionTransition}
-                  >
-                    <ActiveFinding finding={f} />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
+            <LayoutGroup>
+              <motion.div layout={!reducedMotion} transition={motionTransition} className="space-y-2">
+                <AnimatePresence mode="popLayout" initial={false}>
+                  {opportunityFindings.map((f) => (
+                    <motion.div
+                      key={f.id}
+                      layout={!reducedMotion}
+                      initial={reducedMotion ? false : { opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
+                      transition={motionTransition}
+                    >
+                      <ActiveFinding finding={f} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
+            </LayoutGroup>
           </motion.div>
         )}
       </AnimatePresence>

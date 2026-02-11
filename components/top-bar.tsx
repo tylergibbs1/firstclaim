@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useApp, useDispatch } from "@/lib/store";
+import { useApp, useAnalysis, useDispatch } from "@/lib/store";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { STAGE_LABELS } from "@/lib/types";
@@ -15,7 +15,8 @@ const SessionHistoryDrawer = dynamic(() =>
 );
 
 export function TopBar() {
-  const { appState, analysisStage } = useApp();
+  const { appState } = useApp();
+  const { analysisStage } = useAnalysis();
   const dispatch = useDispatch();
   const router = useRouter();
   const { user, signOut } = useAuth();

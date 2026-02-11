@@ -210,6 +210,8 @@ export function ChatPanel() {
 
   const sendMessageRef = useRef(sendMessage);
   sendMessageRef.current = sendMessage;
+  const isSendingRef = useRef(isSending);
+  isSendingRef.current = isSending;
 
   useEffect(() => {
     if (pendingFixMessage && !fixInFlightRef.current) {
@@ -222,12 +224,15 @@ export function ChatPanel() {
     }
   }, [pendingFixMessage, dispatch]);
 
-  function handleSend(text?: string) {
-    const content = text || input.trim();
-    if (!content || isSending) return;
-    setInput("");
-    sendMessage(content);
-  }
+  const handleSend = useCallback((text?: string) => {
+    if (isSendingRef.current) return;
+    setInput((prev) => {
+      const content = text || prev.trim();
+      if (!content) return prev;
+      sendMessageRef.current(content);
+      return "";
+    });
+  }, []);
 
   return (
     <div className="flex h-full flex-col bg-background/50">

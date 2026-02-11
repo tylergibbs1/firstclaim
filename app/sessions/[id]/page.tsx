@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useAuth } from "@/components/auth-provider";
-import { LoginScreen } from "@/components/login-screen";
 import { useApp, useDispatch } from "@/lib/store";
 import { TopBar } from "@/components/top-bar";
 import { transformDbMessages } from "@/lib/session-helpers";
@@ -14,6 +13,9 @@ const ClaimWorkspace = dynamic(() =>
 );
 const ChatPanel = dynamic(() =>
   import("@/components/chat-panel").then((m) => ({ default: m.ChatPanel }))
+);
+const LoginScreen = dynamic(() =>
+  import("@/components/login-screen").then((m) => ({ default: m.LoginScreen }))
 );
 
 export default function SessionPage() {
