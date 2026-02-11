@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -45,19 +46,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function signInWithGoogle() {
+  const signInWithGoogle = useCallback(async () => {
     await supabaseBrowser.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
-  }
+  }, []);
 
-  async function signOut() {
+  const signOut = useCallback(async () => {
     await supabaseBrowser.auth.signOut();
     setSession(null);
-  }
+  }, []);
 
   return (
     <AuthCtx value={{

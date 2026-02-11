@@ -10,7 +10,7 @@ export const STAGE_LABELS: Record<AnalysisStage, string> = {
   5: "Complete",
 };
 
-export type FindingSeverity = "critical" | "warning" | "info";
+export type FindingSeverity = "critical" | "warning" | "info" | "opportunity";
 
 export interface Finding {
   id: string;

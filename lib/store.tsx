@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useMemo,
   useReducer,
   type ReactNode,
   type Dispatch,
@@ -16,20 +17,36 @@ import type {
   NoteHighlight,
 } from "./types";
 
-interface StoreState {
+/* ------------------------------------------------------------------ */
+/*  Slice interfaces                                                   */
+/* ------------------------------------------------------------------ */
+
+export interface ClaimSlice {
+  claim: ClaimData | null;
+  previousClaim: ClaimData | null;
+}
+
+export interface ChatSlice {
+  messages: ChatMessage[];
+  pendingFixMessage: string | null;
+}
+
+export interface AppSlice {
   appState: AppState;
   analysisStage: AnalysisStage;
   analysisToolActivity: { tool: string; query: string; result?: string } | null;
   clinicalNotes: string;
-  claim: ClaimData | null;
-  previousClaim: ClaimData | null;
-  messages: ChatMessage[];
   leftPanelView: LeftPanelView;
   selectedHighlight: NoteHighlight | null;
   noteHighlights: NoteHighlight[];
   sessionId: string | null;
-  pendingFixMessage: string | null;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Combined state & actions                                           */
+/* ------------------------------------------------------------------ */
+
+type StoreState = ClaimSlice & ChatSlice & AppSlice;
 
 type Action =
   | { type: "SET_APP_STATE"; state: AppState }
@@ -157,22 +174,111 @@ function reducer(state: StoreState, action: Action): StoreState {
   }
 }
 
-const StoreContext = createContext<StoreState>(initialState);
+/* ------------------------------------------------------------------ */
+/*  Contexts                                                           */
+/* ------------------------------------------------------------------ */
+
+const ClaimContext = createContext<ClaimSlice>({
+  claim: null,
+  previousClaim: null,
+});
+
+const ChatContext = createContext<ChatSlice>({
+  messages: [],
+  pendingFixMessage: null,
+});
+
+const AppContext = createContext<AppSlice>({
+  appState: "input",
+  analysisStage: 1,
+  analysisToolActivity: null,
+  clinicalNotes: "",
+  leftPanelView: "claim",
+  selectedHighlight: null,
+  noteHighlights: [],
+  sessionId: null,
+});
+
 const DispatchContext = createContext<Dispatch<Action>>(() => {});
+
+/* ------------------------------------------------------------------ */
+/*  Provider                                                           */
+/* ------------------------------------------------------------------ */
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  const claimSlice = useMemo<ClaimSlice>(
+    () => ({ claim: state.claim, previousClaim: state.previousClaim }),
+    [state.claim, state.previousClaim]
+  );
+
+  const chatSlice = useMemo<ChatSlice>(
+    () => ({ messages: state.messages, pendingFixMessage: state.pendingFixMessage }),
+    [state.messages, state.pendingFixMessage]
+  );
+
+  const appSlice = useMemo<AppSlice>(
+    () => ({
+      appState: state.appState,
+      analysisStage: state.analysisStage,
+      analysisToolActivity: state.analysisToolActivity,
+      clinicalNotes: state.clinicalNotes,
+      leftPanelView: state.leftPanelView,
+      selectedHighlight: state.selectedHighlight,
+      noteHighlights: state.noteHighlights,
+      sessionId: state.sessionId,
+    }),
+    [
+      state.appState,
+      state.analysisStage,
+      state.analysisToolActivity,
+      state.clinicalNotes,
+      state.leftPanelView,
+      state.selectedHighlight,
+      state.noteHighlights,
+      state.sessionId,
+    ]
+  );
+
   return (
-    <StoreContext value={state}>
-      <DispatchContext value={dispatch}>{children}</DispatchContext>
-    </StoreContext>
+    <DispatchContext value={dispatch}>
+      <ClaimContext value={claimSlice}>
+        <ChatContext value={chatSlice}>
+          <AppContext value={appSlice}>
+            {children}
+          </AppContext>
+        </ChatContext>
+      </ClaimContext>
+    </DispatchContext>
   );
 }
 
-export function useStore() {
-  return useContext(StoreContext);
+/* ------------------------------------------------------------------ */
+/*  Hooks                                                              */
+/* ------------------------------------------------------------------ */
+
+/** Claim data only — re-renders only when claim/previousClaim change. */
+export function useClaim() {
+  return useContext(ClaimContext);
 }
 
+/** Chat messages only — re-renders only when messages/pendingFixMessage change. */
+export function useChat() {
+  return useContext(ChatContext);
+}
+
+/** App-level UI/session state. */
+export function useApp() {
+  return useContext(AppContext);
+}
+
+/** Stable dispatch function. */
 export function useDispatch() {
   return useContext(DispatchContext);
+}
+
+/** @deprecated Use useClaim(), useChat(), or useApp() for targeted subscriptions. */
+export function useStore() {
+  return { ...useClaim(), ...useChat(), ...useApp() };
 }

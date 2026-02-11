@@ -23,6 +23,10 @@ interface SessionSummary {
   messageCount: number;
 }
 
+let cachedSessions: SessionSummary[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 30_000;
+
 const shortDateFormat = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
@@ -67,6 +71,10 @@ export function SessionHistoryDrawer({
   const fetchSessions = useCallback(async () => {
     const token = authSession?.access_token;
     if (!token) return;
+    if (cachedSessions && Date.now() - cacheTimestamp < CACHE_TTL) {
+      setSessions(cachedSessions);
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/sessions", {
@@ -74,6 +82,8 @@ export function SessionHistoryDrawer({
       });
       if (res.ok) {
         const data = await res.json();
+        cachedSessions = data.sessions;
+        cacheTimestamp = Date.now();
         setSessions(data.sessions);
       }
     } finally {
@@ -90,6 +100,7 @@ export function SessionHistoryDrawer({
     const token = authSession?.access_token;
     if (!token) return;
     setSessions((prev) => prev.filter((s) => s.id !== id));
+    cachedSessions = cachedSessions?.filter((s) => s.id !== id) ?? null;
     await fetch(`/api/sessions/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },

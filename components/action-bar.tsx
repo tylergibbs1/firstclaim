@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useStore } from "@/lib/store";
+import { useClaim } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -40,7 +40,7 @@ function claimToCSV(claim: ClaimData): string {
 }
 
 export function ActionBar() {
-  const { claim } = useStore();
+  const { claim } = useClaim();
   const [showJson, setShowJson] = useState(false);
   const [copied, setCopied] = useState(false);
 

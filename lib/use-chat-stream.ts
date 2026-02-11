@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useStore, useDispatch } from "@/lib/store";
+import { useApp, useDispatch } from "@/lib/store";
 import { useAuth } from "@/components/auth-provider";
 import { consumeSSE } from "@/lib/sse";
 import type { ChatMessage } from "@/lib/types";
 
 export function useChatStream() {
-  const { sessionId } = useStore();
+  const { sessionId } = useApp();
   const dispatch = useDispatch();
   const { session } = useAuth();
   const [isSending, setIsSending] = useState(false);

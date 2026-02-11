@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useStore } from "@/lib/store";
+import { useApp } from "@/lib/store";
 import { useAnalysisStream } from "@/lib/use-analysis-stream";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -84,7 +84,7 @@ PLAN:
 ];
 
 export function InputState() {
-  const { clinicalNotes } = useStore();
+  const { clinicalNotes } = useApp();
   const { startAnalysis, isAnalyzing } = useAnalysisStream();
   const [notes, setNotes] = useState(clinicalNotes);
 

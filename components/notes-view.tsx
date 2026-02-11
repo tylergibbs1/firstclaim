@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
-import { useStore, useDispatch } from "@/lib/store";
+import { useMemo, useRef } from "react";
+import { useApp, useDispatch } from "@/lib/store";
 import type { NoteHighlight } from "@/lib/types";
 import { X } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 interface TextSegment {
   text: string;
@@ -182,9 +181,11 @@ function DetailPanel({ highlight }: { highlight: NoteHighlight }) {
 }
 
 export function NotesView() {
-  const { clinicalNotes, selectedHighlight, noteHighlights } = useStore();
+  const { clinicalNotes, selectedHighlight, noteHighlights } = useApp();
   const dispatch = useDispatch();
-  const reducedMotion = useReducedMotion();
+
+  const lastHighlightRef = useRef<NoteHighlight | null>(null);
+  if (selectedHighlight) lastHighlightRef.current = selectedHighlight;
 
   const highlights = noteHighlights;
 
@@ -236,19 +237,15 @@ export function NotesView() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {selectedHighlight && (
-          <motion.div
-            initial={reducedMotion ? false : { x: "100%" }}
-            animate={{ x: 0 }}
-            exit={reducedMotion ? { opacity: 0 } : { x: "100%" }}
-            transition={reducedMotion ? { duration: 0 } : { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-            className="absolute inset-y-0 right-0 shadow-lg"
-          >
-            <DetailPanel highlight={selectedHighlight} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div
+        className={`absolute inset-y-0 right-0 shadow-lg transition-transform duration-[250ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] motion-reduce:duration-0 ${
+          selectedHighlight ? "translate-x-0" : "translate-x-full"
+        }`}
+        aria-hidden={!selectedHighlight}
+        inert={!selectedHighlight || undefined}
+      >
+        {lastHighlightRef.current && <DetailPanel highlight={lastHighlightRef.current} />}
+      </div>
     </div>
   );
 }

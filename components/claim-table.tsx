@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect, useMemo, memo } from "react";
-import { useStore, useDispatch } from "@/lib/store";
+import { useClaim, useDispatch } from "@/lib/store";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight, ExternalLink, Copy, Check } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from "motion/react";
 import type { ClaimLineItem } from "@/lib/types";
 import { lineItemFee, totalClaimValue, formatUSD } from "@/lib/fee-schedule";
+
+const SPRING_TRANSITION = { type: "spring" as const, stiffness: 350, damping: 30, mass: 1 };
+const INSTANT_TRANSITION = { duration: 0 };
 
 type DiffStatus = "added" | "modified" | undefined;
 
@@ -212,7 +215,7 @@ const LineItemRow = memo(function LineItemRow({
 });
 
 export function ClaimTable() {
-  const { claim, previousClaim } = useStore();
+  const { claim, previousClaim } = useClaim();
   const dispatch = useDispatch();
   const reducedMotion = useReducedMotion();
 
@@ -280,7 +283,7 @@ export function ClaimTable() {
                 initial={reducedMotion ? false : { opacity: 0, scale: 0.97 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.97 }}
-                transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 350, damping: 30, mass: 1 }}
+                transition={reducedMotion ? INSTANT_TRANSITION : SPRING_TRANSITION}
               >
                 <LineItemRow
                   item={item}

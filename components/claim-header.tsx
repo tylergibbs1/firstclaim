@@ -1,6 +1,6 @@
 "use client";
 
-import { useStore, useDispatch } from "@/lib/store";
+import { useClaim, useApp, useDispatch } from "@/lib/store";
 import { revenueAtRisk, formatUSD } from "@/lib/fee-schedule";
 import NumberFlow from "@number-flow/react";
 import { Calendar, User } from "lucide-react";
@@ -24,7 +24,8 @@ const riskColors = {
 };
 
 export function ClaimHeader() {
-  const { claim, leftPanelView, previousClaim } = useStore();
+  const { claim, previousClaim } = useClaim();
+  const { leftPanelView } = useApp();
   const dispatch = useDispatch();
 
   if (!claim) return null;

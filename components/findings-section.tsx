@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useStore, useDispatch } from "@/lib/store";
+import { useClaim, useDispatch } from "@/lib/store";
 import {
   ChevronDown,
   ChevronRight,
@@ -9,7 +9,9 @@ import {
   AlertTriangle,
   AlertCircle,
   Info,
+  TrendingUp,
   ExternalLink,
+  MessageCircle,
   Wrench,
 } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from "motion/react";
@@ -19,6 +21,9 @@ import {
   findingRevenueImpact,
   formatUSD,
 } from "@/lib/fee-schedule";
+
+const SPRING_TRANSITION = { type: "spring" as const, stiffness: 350, damping: 30, mass: 1 };
+const INSTANT_TRANSITION = { duration: 0 };
 
 const severityConfig: Record<
   FindingSeverity,
@@ -41,6 +46,12 @@ const severityConfig: Record<
     bgClass: "bg-info/10 border-info/20",
     textClass: "text-info",
     label: "INFO",
+  },
+  opportunity: {
+    icon: TrendingUp,
+    bgClass: "bg-warning/10 border-warning/20",
+    textClass: "text-warning-foreground",
+    label: "OPPORTUNITY",
   },
 };
 
@@ -131,8 +142,12 @@ function ActiveFinding({ finding, dollarImpact }: { finding: Finding; dollarImpa
                     }
                     className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-[12px] font-medium text-primary transition-colors hover:bg-primary/20"
                   >
-                    <Wrench className="h-3 w-3" aria-hidden="true" />
-                    Fix this
+                    {finding.severity === "opportunity" ? (
+                      <MessageCircle className="h-3 w-3" aria-hidden="true" />
+                    ) : (
+                      <Wrench className="h-3 w-3" aria-hidden="true" />
+                    )}
+                    {finding.severity === "opportunity" ? "Learn more" : "Fix this"}
                   </button>
                 )}
                 {finding.sourceUrl && (
@@ -156,58 +171,101 @@ function ActiveFinding({ finding, dollarImpact }: { finding: Finding; dollarImpa
 }
 
 export function FindingsSection() {
-  const { claim } = useStore();
+  const { claim } = useClaim();
   const reducedMotion = useReducedMotion();
 
-  const { sorted, resolvedFindings, activeFindings, atRisk } = useMemo(() => {
-    if (!claim) return { sorted: [], resolvedFindings: [], activeFindings: [], atRisk: 0 };
+  const { sorted, opportunityFindings, resolvedFindings, activeFindings, atRisk } = useMemo(() => {
+    if (!claim) return { sorted: [], opportunityFindings: [], resolvedFindings: [], activeFindings: [], atRisk: 0 };
     const active: Finding[] = [];
+    const opportunities: Finding[] = [];
     const resolved: Finding[] = [];
     for (const f of claim.findings ?? []) {
-      (f.resolved ? resolved : active).push(f);
+      if (f.resolved) resolved.push(f);
+      else if (f.severity === "opportunity") opportunities.push(f);
+      else active.push(f);
     }
-    const order: FindingSeverity[] = ["critical", "warning", "info"];
+    const order: FindingSeverity[] = ["critical", "warning", "info", "opportunity"];
     const s = [...active].sort((a, b) => order.indexOf(a.severity) - order.indexOf(b.severity));
-    return { sorted: s, resolvedFindings: resolved, activeFindings: active, atRisk: revenueAtRisk(claim) };
+    return { sorted: s, opportunityFindings: opportunities, resolvedFindings: resolved, activeFindings: active, atRisk: revenueAtRisk(claim) };
   }, [claim]);
 
   if (!claim) return null;
-  if (sorted.length === 0 && resolvedFindings.length === 0) return null;
+  if (sorted.length === 0 && opportunityFindings.length === 0 && resolvedFindings.length === 0) return null;
 
-  const motionTransition = reducedMotion
-    ? { duration: 0 }
-    : { type: "spring" as const, stiffness: 350, damping: 30, mass: 1 };
+  const motionTransition = reducedMotion ? INSTANT_TRANSITION : SPRING_TRANSITION;
 
   return (
     <div className="mx-4 mt-2 mb-4">
-      <h3 className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-        Findings
-      </h3>
-
-      {activeFindings.length > 0 && (
-        <p className={`mb-2.5 text-[13px] font-medium ${atRisk > 0 ? "text-destructive" : "text-success"}`}>
-          {formatUSD(atRisk)} revenue at risk from {activeFindings.length} unresolved finding{activeFindings.length !== 1 ? "s" : ""}
-        </p>
+      {(sorted.length > 0 || opportunityFindings.length > 0) && (
+        <h3 className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Findings
+        </h3>
       )}
 
-      <LayoutGroup>
-        <motion.div layout={!reducedMotion} transition={motionTransition} className="space-y-2">
-          <AnimatePresence mode="popLayout" initial={false}>
-            {sorted.map((f) => (
-              <motion.div
-                key={f.id}
-                layout={!reducedMotion}
-                initial={reducedMotion ? false : { opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
-                transition={motionTransition}
-              >
-                <ActiveFinding finding={f} dollarImpact={findingRevenueImpact(f, claim.lineItems ?? [])} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
-      </LayoutGroup>
+      {sorted.length > 0 ? (
+        <>
+          <p className={`mb-2.5 text-[13px] font-medium ${atRisk > 0 ? "text-destructive" : "text-success"}`}>
+            {formatUSD(atRisk)} revenue at risk from {activeFindings.length} unresolved finding{activeFindings.length !== 1 ? "s" : ""}
+          </p>
+          <LayoutGroup>
+            <motion.div layout={!reducedMotion} transition={motionTransition} className="space-y-2">
+              <AnimatePresence mode="popLayout" initial={false}>
+                {sorted.map((f) => (
+                  <motion.div
+                    key={f.id}
+                    layout={!reducedMotion}
+                    initial={reducedMotion ? false : { opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
+                    transition={motionTransition}
+                  >
+                    <ActiveFinding finding={f} dollarImpact={findingRevenueImpact(f, claim.lineItems ?? [])} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          </LayoutGroup>
+        </>
+      ) : opportunityFindings.length > 0 ? (
+        <div className="mb-2 flex items-center gap-2 rounded-xl border border-success/15 bg-success/5 px-4 py-2.5">
+          <Check className="h-3.5 w-3.5 text-success" aria-hidden="true" />
+          <span className="text-[13px] font-medium text-success">No compliance issues found</span>
+        </div>
+      ) : null}
+
+      <AnimatePresence initial={false}>
+        {opportunityFindings.length > 0 && (
+          <motion.div
+            initial={reducedMotion ? false : { opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            transition={motionTransition}
+            className="mt-4"
+          >
+            <h3 className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Opportunities
+            </h3>
+            <p className="mb-2.5 text-[13px] font-medium text-warning-foreground">
+              {opportunityFindings.length} documentation opportunity{opportunityFindings.length !== 1 ? "s" : ""} identified
+            </p>
+            <div className="space-y-2">
+              <AnimatePresence mode="popLayout" initial={false}>
+                {opportunityFindings.map((f) => (
+                  <motion.div
+                    key={f.id}
+                    layout={!reducedMotion}
+                    initial={reducedMotion ? false : { opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
+                    transition={motionTransition}
+                  >
+                    <ActiveFinding finding={f} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence initial={false}>
         {resolvedFindings.length > 0 && (

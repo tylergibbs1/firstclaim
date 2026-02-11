@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, memo, useMemo } from "react";
-import { useStore, useDispatch } from "@/lib/store";
+import { useState, useRef, useEffect, useCallback, memo, useMemo } from "react";
+import { useChat, useDispatch } from "@/lib/store";
 import { useChatStream } from "@/lib/use-chat-stream";
 import { ArrowUp, ChevronRight } from "lucide-react";
 import { Shimmer } from "@/components/ui/shimmer";
@@ -190,7 +190,7 @@ function SuggestedPrompts({
 }
 
 export function ChatPanel() {
-  const { messages, pendingFixMessage } = useStore();
+  const { messages, pendingFixMessage } = useChat();
   const dispatch = useDispatch();
   const { sendMessage, isSending } = useChatStream();
   const [input, setInput] = useState("");
@@ -208,17 +208,19 @@ export function ChatPanel() {
     }
   }, [messages, lastPrompts]);
 
+  const sendMessageRef = useRef(sendMessage);
+  sendMessageRef.current = sendMessage;
+
   useEffect(() => {
     if (pendingFixMessage && !fixInFlightRef.current) {
       fixInFlightRef.current = true;
       dispatch({ type: "CLEAR_PENDING_FIX_MESSAGE" });
       setInput("");
-      sendMessage(pendingFixMessage).finally(() => {
+      sendMessageRef.current(pendingFixMessage).finally(() => {
         fixInFlightRef.current = false;
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingFixMessage]);
+  }, [pendingFixMessage, dispatch]);
 
   function handleSend(text?: string) {
     const content = text || input.trim();

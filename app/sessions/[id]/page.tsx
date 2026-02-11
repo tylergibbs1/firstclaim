@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useAuth } from "@/components/auth-provider";
 import { LoginScreen } from "@/components/login-screen";
-import { useStore, useDispatch } from "@/lib/store";
+import { useApp, useDispatch } from "@/lib/store";
 import { TopBar } from "@/components/top-bar";
 import { transformDbMessages } from "@/lib/session-helpers";
 
@@ -20,7 +20,7 @@ export default function SessionPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, session: authSession, isLoading: authLoading } = useAuth();
-  const { sessionId, appState } = useStore();
+  const { sessionId, appState } = useApp();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { useStore } from "@/lib/store";
+import { useApp } from "@/lib/store";
 import {
   ShieldCheck,
   Sparkles,
@@ -73,6 +73,9 @@ const stageLabels: Record<AnalysisStage, string> = {
 /*  Card component                                                     */
 /* ------------------------------------------------------------------ */
 
+const SPRING_TRANSITION = { type: "spring" as const, stiffness: 400, damping: 35, mass: 0.5 };
+const INSTANT_TRANSITION = { duration: 0 };
+
 function ToolCardRow({ card, isActive }: { card: ToolCard; isActive: boolean }) {
   const meta = getToolMeta(card.tool, card.query);
   const Icon = meta.icon;
@@ -83,7 +86,7 @@ function ToolCardRow({ card, isActive }: { card: ToolCard; isActive: boolean }) 
       layout={!reducedMotion}
       initial={reducedMotion ? false : { opacity: 0, y: 14, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 35, mass: 0.5 }}
+      transition={reducedMotion ? INSTANT_TRANSITION : SPRING_TRANSITION}
       className={`rounded-xl border px-3 py-2.5 text-left transition-colors duration-300 ${
         isActive
           ? "border-purple/20 bg-purple/[0.03] shadow-sm"
@@ -153,7 +156,7 @@ function ToolCardRow({ card, isActive }: { card: ToolCard; isActive: boolean }) 
 /* ------------------------------------------------------------------ */
 
 export function AnalysisState() {
-  const { analysisStage, analysisToolActivity } = useStore();
+  const { analysisStage, analysisToolActivity } = useApp();
   const isDone = analysisStage >= 5;
 
   /* Card state */

@@ -5,6 +5,7 @@ import type { ClaimData, ClaimLineItem, Finding } from "./types";
  * Source: cms.gov/medicare/payment/fee-schedules
  */
 const MEDICARE_FEE_SCHEDULE: Record<string, number> = {
+  "99212": 57,
   "99213": 92,
   "99214": 131,
   "72070": 31,
@@ -14,6 +15,7 @@ const MEDICARE_FEE_SCHEDULE: Record<string, number> = {
   "11200": 78,
   "20610": 72,
   "77067": 150,
+  "99215": 180,
 };
 
 /** Per-unit fee for a CPT code. Returns 0 if unknown. */
@@ -35,7 +37,7 @@ export function totalClaimValue(claim: ClaimData): number {
 export function revenueAtRisk(claim: ClaimData): number {
   const flaggedLines = new Set(
     (claim.findings ?? [])
-      .filter((f) => !f.resolved && f.relatedLineNumber != null)
+      .filter((f) => !f.resolved && f.relatedLineNumber != null && f.severity !== "opportunity")
       .map((f) => f.relatedLineNumber)
   );
   return (claim.lineItems ?? [])

@@ -4,8 +4,7 @@ import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
-import { LoginScreen } from "@/components/login-screen";
-import { useStore } from "@/lib/store";
+import { useApp } from "@/lib/store";
 import { TopBar } from "@/components/top-bar";
 import { InputState } from "@/components/input-state";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -19,12 +18,15 @@ const ClaimWorkspace = dynamic(() =>
 const ChatPanel = dynamic(() =>
   import("@/components/chat-panel").then((m) => ({ default: m.ChatPanel }))
 );
+const LoginScreen = dynamic(() =>
+  import("@/components/login-screen").then((m) => ({ default: m.LoginScreen }))
+);
 
 const transition = { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] as const };
 
 export default function Page() {
   const { user, isLoading } = useAuth();
-  const { appState, sessionId } = useStore();
+  const { appState, sessionId } = useApp();
   const router = useRouter();
   const reducedMotion = useReducedMotion();
 

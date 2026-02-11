@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useStore, useDispatch } from "@/lib/store";
+import { useApp, useDispatch } from "@/lib/store";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { STAGE_LABELS } from "@/lib/types";
@@ -15,7 +15,7 @@ const SessionHistoryDrawer = dynamic(() =>
 );
 
 export function TopBar() {
-  const { appState, analysisStage } = useStore();
+  const { appState, analysisStage } = useApp();
   const dispatch = useDispatch();
   const router = useRouter();
   const { user, signOut } = useAuth();
@@ -23,11 +23,7 @@ export function TopBar() {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const isDark = stored === "dark" || (!stored && prefersDark);
-    setDark(isDark);
-    document.documentElement.classList.toggle("dark", isDark);
+    setDark(document.documentElement.classList.contains("dark"));
   }, []);
 
   function toggleTheme() {

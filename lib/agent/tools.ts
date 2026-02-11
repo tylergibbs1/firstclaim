@@ -33,7 +33,7 @@ const lineItemSchema = z.object({
 
 const findingSchema = z.object({
   id: z.string(),
-  severity: z.enum(["critical", "warning", "info"]),
+  severity: z.enum(["critical", "warning", "info", "opportunity"]),
   title: z.string(),
   description: z.string(),
   recommendation: z.string().optional(),

@@ -195,28 +195,37 @@ Follow your 5-stage pipeline. Use your tools to search codes, build the claim, a
 }
 
 function buildChatSummary(claim: ClaimData): string {
-  const openFindings = (claim.findings ?? []).filter((f) => !f.resolved);
-  const critical = openFindings.filter((f) => f.severity === "critical");
+  const allOpen = (claim.findings ?? []).filter((f) => !f.resolved);
+  const issues = allOpen.filter((f) => f.severity !== "opportunity");
+  const opportunities = allOpen.filter((f) => f.severity === "opportunity");
+  const critical = issues.filter((f) => f.severity === "critical");
 
   const lines: string[] = [];
 
   // Opening line — warm, concise
-  if (openFindings.length === 0) {
+  if (issues.length === 0 && opportunities.length === 0) {
     lines.push(`Claim looks clean — **${claim.lineItems.length} line items**, no issues found.`);
   } else if (critical.length > 0) {
-    lines.push(`Heads up — found **${openFindings.length} issue${openFindings.length > 1 ? "s" : ""}** across ${claim.lineItems.length} line items. Here's the quick read:`);
-  } else {
+    lines.push(`Heads up — found **${issues.length} issue${issues.length > 1 ? "s" : ""}** across ${claim.lineItems.length} line items. Here's the quick read:`);
+  } else if (issues.length > 0) {
     lines.push(`${claim.lineItems.length} line items built. A few things to look at:`);
+  } else {
+    lines.push(`Claim looks clean — **${claim.lineItems.length} line items**, no compliance issues.`);
   }
 
-  // Top 3 findings as bullets
-  const topFindings = openFindings.slice(0, 3);
+  // Top 3 issues as bullets
+  const topFindings = issues.slice(0, 3);
   for (const f of topFindings) {
     const tag = f.severity === "critical" ? "**Critical**" : f.severity === "warning" ? "**Warning**" : "**Info**";
     lines.push(`- ${tag} — ${f.title}`);
   }
-  if (openFindings.length > 3) {
-    lines.push(`- Plus ${openFindings.length - 3} more in the findings panel.`);
+  if (issues.length > 3) {
+    lines.push(`- Plus ${issues.length - 3} more in the findings panel.`);
+  }
+
+  // Opportunities mentioned separately
+  if (opportunities.length > 0) {
+    lines.push(`\n${opportunities.length} documentation opportunity${opportunities.length !== 1 ? "s" : ""} identified — check the Opportunities panel.`);
   }
 
   return lines.join("\n");

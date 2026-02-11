@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useStore } from "@/lib/store";
+import { useClaim, useApp } from "@/lib/store";
 import { ClaimHeader } from "./claim-header";
 import { ClaimTable } from "./claim-table";
 import { FindingsSection } from "./findings-section";
@@ -9,7 +9,8 @@ import { ActionBar } from "./action-bar";
 import { NotesView } from "./notes-view";
 
 export function ClaimWorkspace() {
-  const { claim, leftPanelView } = useStore();
+  const { claim } = useClaim();
+  const { leftPanelView } = useApp();
   const [scrolled, setScrolled] = useState(false);
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
