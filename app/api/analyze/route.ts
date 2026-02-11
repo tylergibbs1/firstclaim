@@ -15,7 +15,9 @@ export async function POST(req: Request) {
     return Response.json({ error: "Missing clinicalNotes" }, { status: 400 });
   }
 
+  const abortController = new AbortController();
   const encoder = new TextEncoder();
+
   const stream = new ReadableStream({
     async start(controller) {
       try {
@@ -23,9 +25,9 @@ export async function POST(req: Request) {
           clinicalNotes,
           patient,
           userId,
+          abortController,
           onEvent(event) {
-            const data = `data: ${JSON.stringify(event)}\n\n`;
-            controller.enqueue(encoder.encode(data));
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
           },
         });
       } catch (err) {
@@ -34,6 +36,10 @@ export async function POST(req: Request) {
       } finally {
         controller.close();
       }
+    },
+    cancel() {
+      // Client disconnected — stop the agent to avoid burning tokens
+      abortController.abort();
     },
   });
 

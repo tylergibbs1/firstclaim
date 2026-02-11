@@ -1,7 +1,7 @@
 import { tool } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
-import type { ClaimData, NoteHighlight } from "@/lib/types";
+import type { ClaimData, ClaimLineItem, NoteHighlight } from "@/lib/types";
 
 export interface ClaimState {
   claim: ClaimData | null;
@@ -11,6 +11,46 @@ export interface ClaimState {
   onHighlightsUpdate: (highlights: NoteHighlight[]) => void;
   onToolResult?: (tool: string, result: string) => void;
 }
+
+// ── Zod schemas mirroring the TypeScript interfaces in lib/types.ts ──
+
+const patientSchema = z.object({
+  sex: z.enum(["M", "F"]),
+  age: z.number().optional(),
+  dateOfBirth: z.string().optional(),
+});
+
+const lineItemSchema = z.object({
+  lineNumber: z.number(),
+  cpt: z.string(),
+  description: z.string(),
+  modifiers: z.array(z.string()),
+  icd10: z.array(z.string()),
+  units: z.number(),
+  codingRationale: z.string(),
+  sources: z.array(z.string()),
+});
+
+const findingSchema = z.object({
+  id: z.string(),
+  severity: z.enum(["critical", "warning", "info"]),
+  title: z.string(),
+  description: z.string(),
+  recommendation: z.string().optional(),
+  sourceUrl: z.string().optional(),
+  relatedLineNumber: z.number().optional(),
+  resolved: z.boolean(),
+  resolvedReason: z.string().optional(),
+});
+
+const claimSchema = z.object({
+  claimId: z.string(),
+  dateOfService: z.string(),
+  patient: patientSchema,
+  lineItems: z.array(lineItemSchema),
+  riskScore: z.number(),
+  findings: z.array(findingSchema),
+});
 
 export function makeTools(state: ClaimState) {
   const searchIcd10 = tool(
@@ -175,10 +215,10 @@ export function makeTools(state: ClaimState) {
 Always call this tool when you want to change any claim data.`,
     {
       action: z.enum(["set", "add_line_item", "remove_line_item", "update_line_item", "add_finding", "resolve_finding", "set_risk_score"]).describe("The mutation action"),
-      claim: z.any().optional().describe("Full ClaimData object (for 'set' action)"),
-      line_item: z.any().optional().describe("ClaimLineItem object (for add/update)"),
+      claim: claimSchema.optional().describe("Full ClaimData object (for 'set' action)"),
+      line_item: lineItemSchema.partial().optional().describe("ClaimLineItem object (for add/update — partial fields accepted for updates)"),
       line_number: z.number().optional().describe("Line number to remove or update"),
-      finding: z.any().optional().describe("Finding object (for 'add_finding')"),
+      finding: findingSchema.optional().describe("Finding object (for 'add_finding')"),
       finding_id: z.string().optional().describe("Finding ID (for 'resolve_finding')"),
       resolved_reason: z.string().optional().describe("Why the finding was resolved"),
       risk_score: z.number().optional().describe("New risk score 0-100 (for 'set_risk_score')"),
@@ -190,14 +230,11 @@ Always call this tool when you want to change any claim data.`,
         case "set":
           if (!args.claim) return { content: [{ type: "text" as const, text: "Missing claim object for 'set' action" }], isError: true };
           claim = args.claim as ClaimData;
-          // Ensure required arrays are never undefined (agent may omit them)
-          if (!claim.findings) claim = { ...claim, findings: [] };
-          if (!claim.lineItems) claim = { ...claim, lineItems: [] };
           break;
 
         case "add_line_item":
           if (!claim || !args.line_item) return { content: [{ type: "text" as const, text: "Missing claim or line_item" }], isError: true };
-          claim = { ...claim, lineItems: [...claim.lineItems, args.line_item] };
+          claim = { ...claim, lineItems: [...claim.lineItems, args.line_item as ClaimLineItem] };
           break;
 
         case "remove_line_item":

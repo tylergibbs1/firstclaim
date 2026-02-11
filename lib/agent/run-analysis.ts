@@ -1,21 +1,18 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import { makeMcpServer } from "./mcp-server";
+import { StreamProcessor } from "./stream-processor";
 import { ANALYSIS_SYSTEM_PROMPT } from "./system-prompt";
 import { supabase } from "@/lib/supabase";
 import type { ClaimData } from "@/lib/types";
 import type { AnalysisSSEEvent } from "@/lib/sse-types";
 import type { ClaimState } from "./tools";
 
-// Hoisted regex patterns — avoid re-creation on every streaming chunk
-const RE_QUERY = /"query"\s*:\s*"([^"]*)/;
-const RE_CODE = /"code"\s*:\s*"([^"]*)/;
-const RE_ACTION = /"action"\s*:\s*"([^"]*)/;
-
 interface RunAnalysisOptions {
   clinicalNotes: string;
   patient?: { sex?: "M" | "F"; age?: number };
   userId: string;
+  abortController?: AbortController;
   onEvent: (event: AnalysisSSEEvent) => void;
 }
 
@@ -32,7 +29,7 @@ async function* streamPrompt(content: string): AsyncIterable<SDKUserMessage> {
   };
 }
 
-export async function runAnalysis({ clinicalNotes, patient, userId, onEvent }: RunAnalysisOptions) {
+export async function runAnalysis({ clinicalNotes, patient, userId, abortController, onEvent }: RunAnalysisOptions) {
   // Create session in Supabase (set status in initial insert to avoid a second round-trip)
   const { data: session, error: sessionErr } = await supabase
     .from("sessions")
@@ -106,19 +103,36 @@ ${clinicalNotes}
 
 Follow your 5-stage pipeline. Use your tools to search codes, build the claim, and validate it.`;
 
-  let agentSessionId: string | undefined;
-  let accumulatedText = "";
-  let inTool = false;
-  let toolInputBuffer = "";
-  let currentToolName = "";
+  const processor = new StreamProcessor({
+    onText: (text) => onEvent({ type: "agent_text", text }),
+    onToolStart: (toolName) => {
+      if (toolName === "search_icd10" || toolName === "lookup_icd10") emitStage(2);
+      else if (toolName === "check_age_sex") emitStage(4);
+      onEvent({ type: "tool_call", tool: toolName, query: "" });
+    },
+    onToolInput: (toolName, extracted) => {
+      onEvent({ type: "tool_call", tool: toolName, query: extracted });
+    },
+    onAssistantToolUse: (toolName, input) => {
+      if (toolName === "update_claim") {
+        const action = input.action as string;
+        if (action === "set") emitStage(3);
+        else if (action === "add_finding") emitStage(4);
+        else if (action === "set_risk_score") emitStage(4);
+      }
+    },
+    onError: (message) => onEvent({ type: "error", message }),
+  });
 
   try {
     const response = query({
       prompt: streamPrompt(prompt),
       options: {
+        abortController,
         systemPrompt: ANALYSIS_SYSTEM_PROMPT,
         model: "claude-opus-4-6",
         mcpServers: { billing: mcpServer },
+        tools: ["WebSearch"],
         allowedTools: ["mcp__billing__*", "WebSearch"],
         includePartialMessages: true,
         maxTurns: 100,
@@ -128,100 +142,12 @@ Follow your 5-stage pipeline. Use your tools to search codes, build the claim, a
     });
 
     for await (const message of response) {
-      // Capture session ID on init
-      if (message.type === "system" && message.subtype === "init") {
-        agentSessionId = message.session_id;
-      }
-
-      // Stream text and tool-call deltas in real-time
-      if (message.type === "stream_event") {
-        const event = message.event;
-
-        if (event.type === "content_block_start") {
-          const block = (event as Record<string, unknown>).content_block as Record<string, unknown> | undefined;
-          if (block?.type === "tool_use") {
-            inTool = true;
-            currentToolName = (block.name as string || "").replace("mcp__billing__", "");
-            toolInputBuffer = "";
-            // Advance stage based on which tool is starting
-            if (currentToolName === "search_icd10" || currentToolName === "lookup_icd10") {
-              emitStage(2);
-            } else if (currentToolName === "add_highlights") {
-              // Fires within Stage 2, no stage change needed
-            } else if (currentToolName === "check_age_sex") {
-              emitStage(4);
-            }
-            onEvent({ type: "tool_call", tool: currentToolName, query: "" });
-          }
-        }
-
-        if (event.type === "content_block_delta") {
-          const delta = (event as Record<string, unknown>).delta as Record<string, unknown> | undefined;
-          if (delta?.type === "text_delta" && !inTool) {
-            const text = delta.text as string;
-            accumulatedText += text;
-            onEvent({ type: "agent_text", text });
-          }
-          if (delta?.type === "input_json_delta" && inTool) {
-            toolInputBuffer += (delta.partial_json as string) || "";
-            const queryMatch = toolInputBuffer.match(RE_QUERY);
-            const codeMatch = toolInputBuffer.match(RE_CODE);
-            const actionMatch = toolInputBuffer.match(RE_ACTION);
-            const extracted = queryMatch?.[1] || codeMatch?.[1] || actionMatch?.[1];
-            if (extracted) {
-              onEvent({ type: "tool_call", tool: currentToolName, query: extracted });
-            }
-          }
-        }
-
-        if (event.type === "content_block_stop") {
-          inTool = false;
-          currentToolName = "";
-          toolInputBuffer = "";
-        }
-      }
-
-      // Complete assistant messages — detect tool calls for stage advancement
-      if (message.type === "assistant" && message.message?.content) {
-        for (const block of message.message.content) {
-          if ("name" in block && block.type === "tool_use") {
-            const toolName = block.name.replace("mcp__billing__", "");
-            const input = block.input as Record<string, unknown>;
-
-            if (toolName === "update_claim") {
-              const action = input.action as string;
-              if (action === "set") emitStage(3);
-              else if (action === "add_finding") emitStage(4);
-              else if (action === "set_risk_score") emitStage(4);
-            }
-          }
-        }
-      }
-
-      // Also accumulate text from complete assistant messages as fallback
-      if (message.type === "assistant" && message.message?.content) {
-        for (const block of message.message.content) {
-          if ("text" in block && block.type === "text") {
-            // Only use this if streaming didn't capture it (no-op if already accumulated)
-            if (!accumulatedText.includes(block.text)) {
-              accumulatedText += block.text;
-            }
-          }
-        }
-      }
-
-      if (message.type === "result") {
-        if (message.subtype !== "success") {
-          const errors = "errors" in message ? (message.errors as string[]) : [];
-          onEvent({
-            type: "error",
-            message: `Agent stopped (${message.subtype}): ${errors.join("; ") || "unknown error"}`,
-          });
-        }
-        break;
-      }
+      if (processor.process(message)) break;
     }
   } catch (err) {
+    // Client disconnected — exit silently
+    if (abortController?.signal.aborted) return;
+
     await supabase.from("sessions").update({ status: "error", updated_at: new Date().toISOString() }).eq("id", sessionId);
     onEvent({ type: "error", message: `Agent error: ${err instanceof Error ? err.message : String(err)}` });
     return;
@@ -231,8 +157,8 @@ Follow your 5-stage pipeline. Use your tools to search codes, build the claim, a
   const finalHighlights = claimState.highlights;
   const suggestedPrompts = claimState.suggestedPrompts.length >= 2
     ? claimState.suggestedPrompts
-    : extractSuggestedPrompts(accumulatedText);
-  const chatSummary = finalClaim ? buildChatSummary(finalClaim) : accumulatedText;
+    : extractSuggestedPrompts(processor.accumulatedText);
+  const chatSummary = finalClaim ? buildChatSummary(finalClaim) : processor.accumulatedText;
 
   // Persist to Supabase BEFORE emitting completion — the chat API loads the
   // session from DB, so the claim must be written before the client can send
@@ -244,7 +170,7 @@ Follow your 5-stage pipeline. Use your tools to search codes, build the claim, a
       .update({
         claim: finalClaim,
         highlights: finalHighlights,
-        agent_session_id: agentSessionId,
+        agent_session_id: processor.agentSessionId,
         status: "completed",
         updated_at: new Date().toISOString(),
       })
@@ -271,7 +197,6 @@ Follow your 5-stage pipeline. Use your tools to search codes, build the claim, a
 function buildChatSummary(claim: ClaimData): string {
   const openFindings = (claim.findings ?? []).filter((f) => !f.resolved);
   const critical = openFindings.filter((f) => f.severity === "critical");
-  const warnings = openFindings.filter((f) => f.severity === "warning");
 
   const lines: string[] = [];
 
