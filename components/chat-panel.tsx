@@ -226,13 +226,11 @@ export function ChatPanel() {
 
   const handleSend = useCallback((text?: string) => {
     if (isSendingRef.current) return;
-    setInput((prev) => {
-      const content = text || prev.trim();
-      if (!content) return prev;
-      sendMessageRef.current(content);
-      return "";
-    });
-  }, []);
+    const content = text || input.trim();
+    if (!content) return;
+    setInput("");
+    sendMessageRef.current(content);
+  }, [input]);
 
   return (
     <div className="flex h-full flex-col bg-background/50">
