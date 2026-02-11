@@ -102,12 +102,12 @@ const LineItemRow = memo(function LineItemRow({
               ))}
             </div>
           ) : (
-            <span className="text-xs text-muted-foreground/30">—</span>
+            null
           )}
         </td>
-        <td className="w-32 py-3 pr-3">
-          <div className="flex flex-wrap gap-1">
-            {item.icd10.map((code) => (
+        <td className="w-40 py-3 pr-3">
+          <div className="flex gap-1">
+            {item.icd10.slice(0, 2).map((code) => (
               <span
                 key={code}
                 className="inline-flex rounded-md border border-tertiary/20 bg-tertiary/8 px-1.5 py-0.5 font-mono text-[11px] font-medium text-foreground/80"
@@ -115,6 +115,11 @@ const LineItemRow = memo(function LineItemRow({
                 {code}
               </span>
             ))}
+            {item.icd10.length > 2 && (
+              <span className="inline-flex rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] font-medium text-muted-foreground">
+                +{item.icd10.length - 2}
+              </span>
+            )}
           </div>
         </td>
         {showQty && (
@@ -131,7 +136,9 @@ const LineItemRow = memo(function LineItemRow({
                 : "text-muted-foreground"
           }`}
         >
-          {lineItemFee(item) === 0 ? "—" : formatUSD(lineItemFee(item))}
+          {lineItemFee(item) === 0 ? (
+            <span className="font-sans text-[10px] text-muted-foreground/40">N/A</span>
+          ) : formatUSD(lineItemFee(item))}
         </td>
         <td className="w-16 py-3 pr-2">
           <div className="flex items-center justify-end gap-1">
@@ -164,6 +171,18 @@ const LineItemRow = memo(function LineItemRow({
           >
             <div className="overflow-hidden">
               <div className="border-b border-border/20 bg-muted/20 px-6 py-3.5">
+                {item.icd10.length > 2 && (
+                  <div className="mb-2.5 flex flex-wrap gap-1">
+                    {item.icd10.map((code) => (
+                      <span
+                        key={code}
+                        className="inline-flex rounded-md border border-tertiary/20 bg-tertiary/8 px-1.5 py-0.5 font-mono text-[11px] font-medium text-foreground/80"
+                      >
+                        {code}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <p className="text-[13px] leading-relaxed text-muted-foreground">
                   {item.codingRationale}
                 </p>
@@ -238,7 +257,7 @@ export function ClaimTable() {
             <th className="w-20 py-2.5 pr-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Modifiers
             </th>
-            <th className="w-32 py-2.5 pr-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <th className="w-40 py-2.5 pr-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Diagnosis
             </th>
             {showQty && (
