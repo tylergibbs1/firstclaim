@@ -43,7 +43,6 @@ export function TopBar() {
     <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-card/80 px-5 backdrop-blur-xl">
       <div className="flex items-center gap-5">
         <Logo text="FirstClaim" size="sm" animate={false} />
-        <span className="hidden text-[10px] text-muted-foreground/50 sm:inline">Powered by Claude Opus 4.6</span>
 
         <Button
           variant="ghost"
