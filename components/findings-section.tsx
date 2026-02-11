@@ -44,24 +44,24 @@ const severityConfig: Record<
   },
 };
 
-function FindingCard({ finding, dollarImpact }: { finding: Finding; dollarImpact?: number }) {
+function ResolvedFinding({ finding }: { finding: Finding }) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-xl border border-success/15 bg-success/5 px-4 py-2.5">
+      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-success/15">
+        <Check className="h-3 w-3 text-success" aria-hidden="true" />
+      </div>
+      <span className="text-[13px] text-muted-foreground line-through">
+        {finding.title}
+      </span>
+    </div>
+  );
+}
+
+function ActiveFinding({ finding, dollarImpact }: { finding: Finding; dollarImpact?: number }) {
   const [expanded, setExpanded] = useState(false);
   const dispatch = useDispatch();
   const config = severityConfig[finding.severity];
   const Icon = config.icon;
-
-  if (finding.resolved) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-xl border border-success/15 bg-success/5 px-4 py-2.5">
-        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-success/15">
-          <Check className="h-3 w-3 text-success" aria-hidden="true" />
-        </div>
-        <span className="text-[13px] text-muted-foreground line-through">
-          {finding.title}
-        </span>
-      </div>
-    );
-  }
 
   return (
     <div
@@ -121,7 +121,7 @@ function FindingCard({ finding, dollarImpact }: { finding: Finding; dollarImpact
             )}
             {(finding.recommendation || finding.sourceUrl) && (
               <div className="mt-3 flex items-center gap-3">
-                {finding.recommendation && !finding.resolved && (
+                {finding.recommendation && (
                   <button
                     onClick={() =>
                       dispatch({
@@ -172,13 +172,14 @@ export function FindingsSection() {
   }, [claim]);
 
   if (!claim) return null;
+  if (sorted.length === 0 && resolvedFindings.length === 0) return null;
 
   const motionTransition = reducedMotion
     ? { duration: 0 }
     : { type: "spring" as const, stiffness: 350, damping: 30, mass: 1 };
 
   return (
-    <div className="mx-4 mt-5 mb-4">
+    <div className="mx-4 mt-2 mb-4">
       <h3 className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
         Findings
       </h3>
@@ -187,17 +188,6 @@ export function FindingsSection() {
         <p className={`mb-2.5 text-[13px] font-medium ${atRisk > 0 ? "text-destructive" : "text-success"}`}>
           {formatUSD(atRisk)} revenue at risk from {activeFindings.length} unresolved finding{activeFindings.length !== 1 ? "s" : ""}
         </p>
-      )}
-
-      {sorted.length === 0 && resolvedFindings.length === 0 && (
-        <div className="flex items-center gap-2.5 rounded-xl border border-success/15 bg-success/5 px-4 py-3">
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-success/15">
-            <Check className="h-3 w-3 text-success" aria-hidden="true" />
-          </div>
-          <span className="text-[13px] font-medium text-success">
-            No issues found — $0 at risk. Claim looks clean.
-          </span>
-        </div>
       )}
 
       <LayoutGroup>
@@ -212,7 +202,7 @@ export function FindingsSection() {
                 exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
                 transition={motionTransition}
               >
-                <FindingCard finding={f} dollarImpact={findingRevenueImpact(f, claim.lineItems ?? [])} />
+                <ActiveFinding finding={f} dollarImpact={findingRevenueImpact(f, claim.lineItems ?? [])} />
               </motion.div>
             ))}
           </AnimatePresence>
@@ -238,7 +228,7 @@ export function FindingsSection() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={motionTransition}
                 >
-                  <FindingCard finding={f} />
+                  <ResolvedFinding finding={f} />
                 </motion.div>
               ))}
             </AnimatePresence>

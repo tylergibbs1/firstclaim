@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useStore, useDispatch } from "@/lib/store";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { STAGE_LABELS } from "@/lib/types";
-import { Clock, LogOut, Plus } from "lucide-react";
+import { Clock, LogOut, Moon, Plus, Sun } from "lucide-react";
 import { Logo } from "@/components/logo";
 
 const SessionHistoryDrawer = dynamic(() =>
@@ -16,11 +17,29 @@ const SessionHistoryDrawer = dynamic(() =>
 export function TopBar() {
   const { appState, analysisStage } = useStore();
   const dispatch = useDispatch();
+  const router = useRouter();
   const { user, signOut } = useAuth();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = stored === "dark" || (!stored && prefersDark);
+    setDark(isDark);
+    document.documentElement.classList.toggle("dark", isDark);
+  }, []);
+
+  function toggleTheme() {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("theme", next ? "dark" : "light");
+  }
 
   function handleNewClaim() {
     dispatch({ type: "RESET" });
+    router.push("/");
   }
 
   return (
@@ -60,6 +79,16 @@ export function TopBar() {
       </div>
 
       <nav className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleTheme}
+          aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+          className="h-8 w-8 rounded-xl p-0 text-muted-foreground hover:text-foreground"
+        >
+          {dark ? <Sun className="h-3.5 w-3.5" aria-hidden="true" /> : <Moon className="h-3.5 w-3.5" aria-hidden="true" />}
+        </Button>
+
         {appState !== "input" && (
           <Button
             variant="ghost"

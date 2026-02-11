@@ -89,7 +89,7 @@ export function ClaimHeader() {
             {formatUSD(revenue)} at risk
           </span>
           <div
-            className={`flex items-center gap-1 rounded-lg px-2 py-0.5 text-[11px] font-semibold tabular-nums ${riskColors[color]}`}
+            className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[13px] font-bold tabular-nums ring-1 ring-current/20 ${riskColors[color]}`}
             aria-label={`Risk score: ${claim.riskScore}, ${riskLabel}`}
           >
             <NumberFlow value={claim.riskScore} />

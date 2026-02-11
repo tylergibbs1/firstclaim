@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Sheet,
   SheetContent,
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { useAuth } from "@/components/auth-provider";
 import { useDispatch } from "@/lib/store";
-import type { ChatMessage } from "@/lib/types";
+import { transformDbMessages } from "@/lib/session-helpers";
 import { Input } from "@/components/ui/input";
 import { MessageSquare, Search, Trash2 } from "lucide-react";
 
@@ -57,6 +58,7 @@ export function SessionHistoryDrawer({
 }) {
   const { session: authSession } = useAuth();
   const dispatch = useDispatch();
+  const router = useRouter();
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -111,35 +113,16 @@ export function SessionHistoryDrawer({
       if (!res.ok) return;
       const { session, messages: dbMessages } = await res.json();
 
-      const messages: ChatMessage[] = dbMessages.map(
-        (m: {
-          id: string;
-          role: string;
-          content: string;
-          created_at: string;
-          tool_activity?: { tool: string; query: string; status: string; result?: string };
-          claim_change?: { description: string; oldValue?: string; newValue?: string; riskBefore?: number; riskAfter?: number; revenueBefore?: number; revenueAfter?: number };
-          suggested_prompts?: string[];
-        }) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          timestamp: new Date(m.created_at),
-          toolActivity: m.tool_activity ?? undefined,
-          claimChange: m.claim_change ?? undefined,
-          suggestedPrompts: m.suggested_prompts ?? undefined,
-        })
-      );
-
       dispatch({
         type: "RESTORE_SESSION",
         sessionId: session.id,
         clinicalNotes: session.clinical_notes ?? "",
         claim: session.claim,
         highlights: session.highlights ?? [],
-        messages,
+        messages: transformDbMessages(dbMessages),
       });
       onOpenChange(false);
+      router.push(`/sessions/${id}`);
     } finally {
       setLoadingId(null);
     }

@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useStore, useDispatch } from "@/lib/store";
-import { useAuth } from "@/components/auth-provider";
+import { useStore } from "@/lib/store";
+import { useAnalysisStream } from "@/lib/use-analysis-stream";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import type { AnalysisStage } from "@/lib/types";
 import { ArrowRight } from "lucide-react";
 
 const SAMPLE_NOTES: { title: string; subtitle: string; badge: string; badgeClass: string; notes: string }[] = [
@@ -86,113 +85,12 @@ PLAN:
 
 export function InputState() {
   const { clinicalNotes } = useStore();
-  const dispatch = useDispatch();
-  const { session } = useAuth();
+  const { startAnalysis, isAnalyzing } = useAnalysisStream();
   const [notes, setNotes] = useState(clinicalNotes);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  async function handleAnalyze() {
-    if (!notes.trim() || isAnalyzing) return;
-    setIsAnalyzing(true);
-
-    dispatch({ type: "SET_CLINICAL_NOTES", notes });
-    dispatch({ type: "SET_APP_STATE", state: "analyzing" });
-    dispatch({ type: "SET_ANALYSIS_STAGE", stage: 1 as AnalysisStage });
-
-    try {
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(session?.access_token && { Authorization: `Bearer ${session.access_token}` }),
-        },
-        body: JSON.stringify({
-          clinicalNotes: notes,
-        }),
-      });
-
-      if (!res.ok || !res.body) {
-        throw new Error(`API error: ${res.status}`);
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const json = line.slice(6);
-          try {
-            const event = JSON.parse(json);
-
-            switch (event.type) {
-              case "stage": {
-                const stage = Math.min(event.stage, 5) as AnalysisStage;
-                dispatch({ type: "SET_ANALYSIS_STAGE", stage });
-                break;
-              }
-              case "claim_built":
-                dispatch({ type: "SET_CLAIM", claim: event.claim });
-                break;
-              case "risk_score":
-                dispatch({ type: "UPDATE_RISK_SCORE", score: event.score });
-                break;
-              case "agent_text":
-                break;
-              case "tool_call":
-                dispatch({ type: "SET_ANALYSIS_TOOL_ACTIVITY", tool: event.tool, query: event.query || "" });
-                break;
-              case "tool_result":
-                dispatch({ type: "SET_ANALYSIS_TOOL_RESULT", result: event.result });
-                break;
-              case "highlights":
-                dispatch({ type: "SET_NOTE_HIGHLIGHTS", highlights: event.highlights });
-                break;
-              case "analysis_complete":
-                dispatch({ type: "SET_SESSION_ID", sessionId: event.sessionId });
-                if (event.claim) {
-                  dispatch({ type: "SET_CLAIM", claim: event.claim });
-                }
-                if (event.highlights) {
-                  dispatch({ type: "SET_NOTE_HIGHLIGHTS", highlights: event.highlights });
-                }
-                dispatch({
-                  type: "ADD_MESSAGE",
-                  message: {
-                    id: `agent-${Date.now()}`,
-                    role: "agent",
-                    content: event.summary,
-                    timestamp: new Date(),
-                    suggestedPrompts: event.suggestedPrompts,
-                  },
-                });
-                dispatch({ type: "SET_ANALYSIS_STAGE", stage: 5 as AnalysisStage });
-                dispatch({ type: "SET_APP_STATE", state: "conversation" });
-                break;
-              case "error":
-                console.error("Analysis error:", event.message);
-                dispatch({ type: "SET_APP_STATE", state: "input" });
-                break;
-            }
-          } catch {
-            // skip malformed JSON
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Analyze fetch error:", err);
-      dispatch({ type: "SET_APP_STATE", state: "input" });
-    } finally {
-      setIsAnalyzing(false);
-    }
+  function handleAnalyze() {
+    if (!notes.trim()) return;
+    startAnalysis(notes);
   }
 
   const wordCount = notes.length > 0

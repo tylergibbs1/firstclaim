@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { LoginScreen } from "@/components/login-screen";
 import { useStore } from "@/lib/store";
@@ -22,8 +24,15 @@ const transition = { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] as const };
 
 export default function Page() {
   const { user, isLoading } = useAuth();
-  const { appState } = useStore();
+  const { appState, sessionId } = useStore();
+  const router = useRouter();
   const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (appState === "conversation" && sessionId) {
+      router.replace(`/sessions/${sessionId}`);
+    }
+  }, [appState, sessionId, router]);
 
   if (isLoading) {
     return (
