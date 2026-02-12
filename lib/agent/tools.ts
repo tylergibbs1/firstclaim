@@ -290,7 +290,7 @@ Always call this tool when you want to change any claim data.`,
 
   const addHighlights = tool(
     "add_highlights",
-    "Map each extracted code back to the exact text span it came from in the clinical notes. Call this after coding (Stage 2) and before building the claim (Stage 3).",
+    "Map each extracted code back to the exact text span it came from in the clinical notes. Call this after coding (Stage 2). Can be called in parallel with update_claim.",
     {
       highlights: z.array(
         z.object({

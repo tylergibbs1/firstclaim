@@ -59,27 +59,34 @@ PLAN:
   },
   {
     title: "Knee Injury + Red Flag",
-    subtitle: "Meniscus tear, critical issue",
+    subtitle: "Meniscus tear, critical + opportunity",
     badge: "Critical",
     badgeClass: "bg-destructive/10 text-destructive",
     notes: `SUBJECTIVE:
-Patient is a 30-year-old male presenting with right knee pain following a basketball injury 3 days ago. Pain 6/10, worse with weight bearing. Mild swelling noted. No locking or giving way. No prior knee injuries.
+Patient is a 30-year-old male presenting with right knee pain following a basketball injury 3 days ago. Pain 6/10, worse with weight bearing. Mild swelling noted. No locking or giving way. No prior knee injuries. Also reports increasing fatigue over the past month. Has a history of hypertension and type 2 diabetes. Brought outside lab results from last week. Currently on lisinopril 10mg daily and metformin 500mg BID.
 
 OBJECTIVE:
+BP 148/92. BMI 32.1.
 Right knee: moderate effusion, positive McMurray test medial, stable to varus/valgus stress. ROM 0-120 degrees (limited by pain). No erythema or warmth.
+Outside labs reviewed: A1c 8.4% (up from 7.1% six months ago), LDL 162, Cr 1.1.
 Screening mammography ordered per protocol.
 
 ASSESSMENT:
 1. Internal derangement, right knee - possible medial meniscus tear
 2. Right knee effusion
-3. Screening mammography (per health maintenance protocol)
+3. Hypertension
+4. Type 2 diabetes
+5. Screening mammography (per health maintenance protocol)
 
 PLAN:
 1. Right knee X-ray, 3 views
 2. Knee joint injection - triamcinolone 40mg + lidocaine
 3. Knee brace, activity modification
 4. MRI if not improved in 2 weeks
-5. Screening mammography scheduled`,
+5. Increase lisinopril 10mg to 20mg daily for uncontrolled BP
+6. Increase metformin 500mg to 1000mg BID, add GLP-1 referral for worsening A1c
+7. Recheck A1c and lipid panel in 3 months
+8. Screening mammography scheduled`,
   },
 ];
 
