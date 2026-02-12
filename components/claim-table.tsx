@@ -86,6 +86,7 @@ const LineItemRow = memo(function LineItemRow({
         }`}
       >
         <td className="w-10 py-3 pr-2 text-right text-xs tabular-nums text-muted-foreground">
+          {diffStatus && <span className="sr-only">{diffStatus === "added" ? "New line" : "Modified line"}</span>}
           {item.lineNumber}
         </td>
         <td className="w-24 py-3 pr-3">
@@ -147,7 +148,7 @@ const LineItemRow = memo(function LineItemRow({
           <div className="flex items-center justify-end gap-1">
             <button
               onClick={handleCopy}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/0 transition-colors group-hover:text-muted-foreground/50 hover:!text-foreground hover:!bg-muted"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground/0 transition-colors group-hover:text-muted-foreground/50 hover:!text-foreground hover:!bg-muted"
               aria-label="Copy line item"
             >
               {copied ? (
@@ -248,27 +249,27 @@ export function ClaimTable() {
       <table className="w-full text-left" aria-label="Claim line items">
         <thead>
           <tr className="border-b border-border/40 bg-muted/30">
-            <th className="w-10 py-2.5 pl-4 pr-2 text-right text-[11px] font-semibold uppercase tracking-widest text-foreground/50">
+            <th className="w-10 py-2.5 pl-4 pr-2 text-right text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               #
             </th>
-            <th className="w-24 py-2.5 pr-3 text-[11px] font-semibold uppercase tracking-widest text-foreground/50">
+            <th className="w-24 py-2.5 pr-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               CPT
             </th>
-            <th className="py-2.5 pr-3 text-[11px] font-semibold uppercase tracking-widest text-foreground/50">
+            <th className="py-2.5 pr-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               Description
             </th>
-            <th className="w-20 py-2.5 pr-3 text-[11px] font-semibold uppercase tracking-widest text-foreground/50">
+            <th className="w-20 py-2.5 pr-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               Modifiers
             </th>
-            <th className="w-40 py-2.5 pr-3 text-[11px] font-semibold uppercase tracking-widest text-foreground/50">
+            <th className="w-40 py-2.5 pr-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               Diagnosis
             </th>
             {showQty && (
-              <th className="w-12 py-2.5 pr-2 text-center text-[11px] font-semibold uppercase tracking-widest text-foreground/50">
+              <th className="w-12 py-2.5 pr-2 text-center text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                 Qty
               </th>
             )}
-            <th className="w-16 py-2.5 pr-2 text-right text-[11px] font-semibold uppercase tracking-widest text-foreground/50">
+            <th className="w-16 py-2.5 pr-2 text-right text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               Fee
             </th>
             <th className="w-16 py-2.5" />

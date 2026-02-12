@@ -63,7 +63,7 @@ export function ClaimHeader() {
             >
               {tab.label}
               {tab.key === "claim" && leftPanelView !== "claim" && previousClaim && (
-                <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-success animate-pulse" role="status" aria-label="New changes available" />
               )}
             </button>
           ))}

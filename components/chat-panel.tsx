@@ -274,7 +274,7 @@ export function ChatPanel() {
               : "translate-y-0 scale-100 opacity-100"
           }`}
         >
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         </button>
         <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-3 py-1 shadow-sm ring-1 ring-border/10 focus-within:ring-2 focus-within:ring-purple/20">
           <label htmlFor="chat-input" className="sr-only">

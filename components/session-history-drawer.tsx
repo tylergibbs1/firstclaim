@@ -156,7 +156,7 @@ export function SessionHistoryDrawer({
         </SheetHeader>
 
         <div className="relative px-3 py-2 border-b border-border/60">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
           <Input
             aria-label="Search sessions"
             placeholder="Search sessions…"
@@ -179,7 +179,7 @@ export function SessionHistoryDrawer({
             </div>
           ) : filteredSessions.length === 0 ? (
             <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-              <MessageSquare className="h-8 w-8 text-muted-foreground/40" />
+              <MessageSquare className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
               <p className="text-sm text-muted-foreground">
                 {search ? "No matching sessions" : "No completed sessions yet"}
               </p>
@@ -213,7 +213,7 @@ export function SessionHistoryDrawer({
                       <button
                         onClick={(e) => handleDelete(e, s.id)}
                         aria-label="Delete session"
-                        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity p-0.5 rounded hover:bg-destructive/10 focus-visible:bg-destructive/10 text-muted-foreground hover:text-destructive focus-visible:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 focus-visible:bg-destructive/10 text-muted-foreground hover:text-destructive focus-visible:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <Trash2 className="h-3 w-3" aria-hidden="true" />
                       </button>

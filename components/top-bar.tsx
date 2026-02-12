@@ -104,7 +104,7 @@ export function TopBar() {
             {user.user_metadata?.avatar_url && (
               <img
                 src={user.user_metadata.avatar_url}
-                alt=""
+                alt={user.user_metadata?.full_name ?? "User avatar"}
                 width={24}
                 height={24}
                 className="h-6 w-6 rounded-full"

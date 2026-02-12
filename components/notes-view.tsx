@@ -103,9 +103,9 @@ function DetailPanel({ highlight }: { highlight: NoteHighlight }) {
             dispatch({ type: "SET_SELECTED_HIGHLIGHT", highlight: null })
           }
           aria-label="Close detail panel"
-          className="flex h-6 w-6 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <X className="h-3.5 w-3.5" />
+          <X className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
       </div>
 
