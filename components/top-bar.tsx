@@ -36,7 +36,7 @@ export function TopBar() {
 
   function handleNewClaim() {
     dispatch({ type: "RESET" });
-    router.push("/");
+    router.push("/home");
   }
 
   return (

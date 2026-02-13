@@ -139,6 +139,8 @@
   --color-tertiary-foreground: var(--tertiary-foreground);
   --color-purple: var(--purple);
   --color-purple-foreground: var(--purple-foreground);
+  --color-teal: var(--teal);
+  --color-teal-foreground: var(--teal-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
@@ -192,6 +194,15 @@
 
   --radius: 0.625rem;
   --spacing: var(--spacing);
+  --animate-shiny-text: shiny-text 8s infinite;
+  @keyframes shiny-text {
+  0%, 90%, 100% {
+    background-position: calc(-100% - var(--shiny-width)) 0;
+    }
+  30%, 60% {
+    background-position: calc(100% + var(--shiny-width)) 0;
+    }
+  }
 }
 
 @layer base {
@@ -228,6 +239,8 @@
     --tertiary-foreground: oklch(0.9818 0.0054 95.0986);
     --purple: oklch(0.5500 0.1500 305);
     --purple-foreground: oklch(0.9818 0.0054 95.0986);
+    --teal: oklch(0.5500 0.1200 185);
+    --teal-foreground: oklch(0.9818 0.0054 95.0986);
     --success: oklch(0.546 0.1494 144.9297);
     --success-foreground: oklch(0.9818 0.0054 95.0986);
     --warning: oklch(0.7500 0.1600 70.0000);
@@ -244,6 +257,8 @@
     --tertiary-foreground: oklch(0.2679 0.0036 106.6427);
     --purple: oklch(0.6500 0.1500 305);
     --purple-foreground: oklch(0.2679 0.0036 106.6427);
+    --teal: oklch(0.6500 0.1200 185);
+    --teal-foreground: oklch(0.2679 0.0036 106.6427);
     --success: oklch(0.6509 0.1308 144.9450);
     --success-foreground: oklch(0.2679 0.0036 106.6427);
     --warning: oklch(0.8000 0.1400 70.0000);

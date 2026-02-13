@@ -44,7 +44,7 @@ export default function SessionPage() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok || cancelled) {
-          if (!cancelled) router.replace("/");
+          if (!cancelled) router.replace("/home");
           return;
         }
         const { session, messages: dbMessages } = await res.json();
@@ -59,7 +59,7 @@ export default function SessionPage() {
           messages: transformDbMessages(dbMessages),
         });
       } catch {
-        if (!cancelled) router.replace("/");
+        if (!cancelled) router.replace("/home");
       } finally {
         if (!cancelled) setLoading(false);
       }
